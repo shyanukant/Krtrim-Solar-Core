@@ -9,6 +9,7 @@ class SP_Post_Types_Taxonomies {
      */
     public function __construct() {
         add_action( 'init', [ $this, 'register_post_types' ] );
+        add_action( 'init', [ $this, 'register_solar_lead_cpt' ] );
         add_action( 'init', [ $this, 'register_taxonomies' ] );
         add_action( 'add_meta_boxes', [ $this, 'add_bids_meta_box' ] );
     }
@@ -51,6 +52,46 @@ class SP_Post_Types_Taxonomies {
             'show_in_rest'          => true,
         ];
         register_post_type( 'solar_project', $args );
+    }
+
+    /**
+     * Register Solar Lead Custom Post Type.
+     */
+    public function register_solar_lead_cpt() {
+        $labels = [
+            'name'                  => _x( 'Solar Leads', 'Post Type General Name', 'unified-solar-dashboard' ),
+            'singular_name'         => _x( 'Solar Lead', 'Post Type Singular Name', 'unified-solar-dashboard' ),
+            'menu_name'             => __( 'Solar Leads', 'unified-solar-dashboard' ),
+            'all_items'             => __( 'All Leads', 'unified-solar-dashboard' ),
+            'add_new_item'          => __( 'Add New Lead', 'unified-solar-dashboard' ),
+            'add_new'               => __( 'Add New', 'unified-solar-dashboard' ),
+            'new_item'              => __( 'New Lead', 'unified-solar-dashboard' ),
+            'edit_item'             => __( 'Edit Lead', 'unified-solar-dashboard' ),
+            'view_item'             => __( 'View Lead', 'unified-solar-dashboard' ),
+            'search_items'          => __( 'Search Leads', 'unified-solar-dashboard' ),
+            'not_found'             => __( 'No leads found', 'unified-solar-dashboard' ),
+            'not_found_in_trash'    => __( 'No leads found in Trash', 'unified-solar-dashboard' ),
+        ];
+        $args = [
+            'label'                 => __( 'Solar Lead', 'unified-solar-dashboard' ),
+            'labels'                => $labels,
+            'supports'              => ['title', 'editor', 'custom-fields', 'author'], // Title = Name, Editor = Notes
+            'hierarchical'          => false,
+            'public'                => false, // Not public facing
+            'show_ui'               => true,
+            'show_in_menu'          => true,
+            'menu_position'         => 6,
+            'menu_icon'             => 'dashicons-groups',
+            'show_in_admin_bar'     => true,
+            'show_in_nav_menus'     => false,
+            'can_export'            => true,
+            'has_archive'           => false,
+            'exclude_from_search'   => true,
+            'publicly_queryable'    => false,
+            'capability_type'       => 'post',
+            'show_in_rest'          => true,
+        ];
+        register_post_type( 'solar_lead', $args );
     }
 
     /**

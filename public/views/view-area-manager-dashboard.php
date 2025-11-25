@@ -52,8 +52,9 @@ function sp_area_manager_dashboard_shortcode() {
                 <a href="#" class="nav-item" data-section="create-project"><span>➕</span> Create Project</a>
                 <a href="#" class="nav-item" data-section="project-reviews"><span>📝</span> Project Reviews</a>
                 <a href="#" class="nav-item" data-section="vendor-approvals"><span>👍</span> Vendor Approvals</a>
-                <a href="#" class="nav-item" data-section="create-vendor"><span>👨‍💼</span> Create Vendor</a>
-                <a href="#" class="nav-item" data-section="create-client"><span>👨‍👩‍👧‍👦</span> Create Client</a>
+                <a href="#" class="nav-item" data-section="vendor-approvals"><span>👍</span> Vendor Approvals</a>
+                <a href="#" class="nav-item" data-section="leads"><span>👥</span> Leads</a>
+                <a href="#" class="nav-item" data-section="create-client"><span>👨‍👩‍👧‍👦</span> Create Paid Client</a>
             </nav>
             <div class="sidebar-profile">
                 <div class="profile-info">
@@ -253,33 +254,79 @@ function sp_area_manager_dashboard_shortcode() {
                     </div>
                 </section>
 
-                <!-- Create Vendor Section -->
-                <section id="create-vendor-section" class="section-content" style="display:none;">
+                <!-- Leads Section -->
+                <section id="leads-section" class="section-content" style="display:none;">
+                    <h2>Lead Management</h2>
                     <div class="card">
-                        <h3>Create New Vendor</h3>
-                        <form id="create-vendor-form">
+                        <h3>Add New Lead</h3>
+                        <form id="create-lead-form">
                             <div class="form-group">
-                                <label for="vendor_username">Username</label>
-                                <input type="text" id="vendor_username" name="vendor_username" required>
+                                <label for="lead_name">Name</label>
+                                <input type="text" id="lead_name" name="lead_name" required>
                             </div>
                             <div class="form-group">
-                                <label for="vendor_email">Email</label>
-                                <input type="email" id="vendor_email" name="vendor_email" required>
+                                <label for="lead_phone">Phone Number</label>
+                                <input type="text" id="lead_phone" name="lead_phone" required>
                             </div>
                             <div class="form-group">
-                                <label for="vendor_password">Password</label>
-                                <input type="password" id="vendor_password" name="vendor_password" required>
+                                <label for="lead_email">Email</label>
+                                <input type="email" id="lead_email" name="lead_email">
                             </div>
-                            <button type="submit" class="btn btn-primary">Create Vendor</button>
-                            <div id="create-vendor-feedback" style="margin-top:15px;"></div>
+                            <div class="form-group">
+                                <label for="lead_status">Status</label>
+                                <select id="lead_status" name="lead_status">
+                                    <option value="new">New</option>
+                                    <option value="contacted">Contacted</option>
+                                    <option value="interested">Interested</option>
+                                    <option value="converted">Converted</option>
+                                    <option value="lost">Lost</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="lead_notes">Notes</label>
+                                <textarea id="lead_notes" name="lead_notes" rows="3"></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Add Lead</button>
+                            <div id="create-lead-feedback" style="margin-top:15px;"></div>
                         </form>
                     </div>
+
+                    <div class="card" style="margin-top: 20px;">
+                        <h3>Your Leads</h3>
+                        <div id="leads-list-container">
+                            <p>Loading leads...</p>
+                        </div>
+                    </div>
                 </section>
+
+                <!-- Message Modal -->
+                <div id="message-modal" class="modal" style="display:none;">
+                    <div class="modal-content">
+                        <span class="close-modal">&times;</span>
+                        <h3>Send Message</h3>
+                        <form id="send-message-form">
+                            <input type="hidden" id="msg_lead_id">
+                            <input type="hidden" id="msg_type">
+                            <div class="form-group">
+                                <label>To: <span id="msg_recipient"></span></label>
+                            </div>
+                            <div class="form-group">
+                                <label for="msg_content">Message</label>
+                                <textarea id="msg_content" name="msg_content" rows="5" required></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Send</button>
+                            <div id="send-message-feedback" style="margin-top:10px;"></div>
+                        </form>
+                    </div>
+                </div>
 
                 <!-- Create Client Section -->
                 <section id="create-client-section" class="section-content" style="display:none;">
                     <div class="card">
-                        <h3>Create New Client</h3>
+                        <h3>Create Paid Client Account</h3>
+                        <div class="alert alert-info">
+                            <p><strong>Note:</strong> Only create accounts for clients who have paid and are ready to start a project. This gives them access to the client dashboard.</p>
+                        </div>
                         <form id="create-client-form">
                             <div class="form-group">
                                 <label for="client_username">Username</label>

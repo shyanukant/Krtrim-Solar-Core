@@ -129,17 +129,44 @@ class SP_Process_Steps_Manager {
         $decision = sanitize_text_field($_POST['decision']);
         $comment = sanitize_textarea_field($_POST['comment']);
 
+        $result = self::process_step_review($step_id, $decision, $comment, get_current_user_id());
+
+        if ($result['success']) {
+            wp_send_json_success(['message' => $result['message']]);
+        } else {
+            wp_send_json_error(['message' => $result['message']]);
+        }
+    }
+
+    /**
+     * Centralized method to process a step review (Approve/Reject).
+     * Handles database updates and notifications.
+     *
+     * @param int $step_id
+     * @param string $decision 'approved' or 'rejected'
+     * @param string $comment
+     * @param int $reviewer_id
+     * @return array ['success' => bool, 'message' => string, 'whatsapp_data' => array|null]
+     */
+    public static function process_step_review($step_id, $decision, $comment, $reviewer_id) {
         if (empty($step_id) || !in_array($decision, ['approved', 'rejected'])) {
-            wp_send_json_error(['message' => 'Invalid data provided.']);
+            return ['success' => false, 'message' => 'Invalid data provided.'];
         }
 
         if ($decision === 'rejected' && empty($comment)) {
-            wp_send_json_error(['message' => 'A comment is required for rejection.']);
+            return ['success' => false, 'message' => 'A comment is required for rejection.'];
         }
 
         global $wpdb;
         $table = $wpdb->prefix . 'solar_process_steps';
+        
+        // Verify step exists
+        $submission = $wpdb->get_row($wpdb->prepare("SELECT project_id, step_number, step_name FROM {$table} WHERE id = %d", $step_id));
+        if (!$submission) {
+            return ['success' => false, 'message' => 'Invalid submission.'];
+        }
 
+        // Update database
         $result = $wpdb->update(
             $table,
             [
@@ -152,13 +179,71 @@ class SP_Process_Steps_Manager {
             ['%d']
         );
 
-        if ($result !== false) {
-            $project_id = $wpdb->get_var($wpdb->prepare("SELECT project_id FROM {$table} WHERE id = %d", $step_id));
-            do_action('sp_step_reviewed', $step_id, $project_id, $decision);
-            wp_send_json_success(['message' => 'Step has been ' . $decision . '.']);
-        } else {
-            wp_send_json_error(['message' => 'Failed to update the database.']);
+        if ($result === false) {
+            return ['success' => false, 'message' => 'Failed to update the database.'];
         }
+
+        // Trigger action hook
+        do_action('sp_step_reviewed', $step_id, $submission->project_id, $decision);
+
+        // --- Notification Logic ---
+        $whatsapp_data = null;
+        $project_id = $submission->project_id;
+        $vendor_id = get_post_meta($project_id, '_assigned_vendor_id', true);
+        
+        if ($vendor_id) {
+            $vendor = get_userdata($vendor_id);
+            $project_title = get_the_title($project_id);
+            
+            if ($vendor) {
+                $notification_options = get_option('sp_notification_options');
+                $vendor_phone = get_user_meta($vendor_id, 'phone', true);
+                $whatsapp_message = '';
+
+                if ($decision === 'approved') {
+                    // Email
+                    if (isset($notification_options['email_submission_approved']) && $notification_options['email_submission_approved'] === '1') {
+                        $subject = 'Project Step Approved: ' . $project_title;
+                        $email_message = "<p>Good news! Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been approved.</p>";
+                        if ($comment) $email_message .= "<p>Admin comment: " . esc_html($comment) . "</p>";
+                        wp_mail($vendor->user_email, $subject, $email_message, ['Content-Type: text/html; charset=UTF-8']);
+                    }
+                    // WhatsApp
+                    if (isset($notification_options['whatsapp_enable']) && isset($notification_options['whatsapp_submission_approved']) && $notification_options['whatsapp_submission_approved'] === '1' && !empty($vendor_phone)) {
+                        $whatsapp_message = "Good news! Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been approved.";
+                        if ($comment) $whatsapp_message .= "\nAdmin comment: " . esc_html($comment);
+                        $whatsapp_data = [
+                            'phone' => '91' . preg_replace('/\D/', '', $vendor_phone),
+                            'message' => urlencode($whatsapp_message)
+                        ];
+                    }
+
+                } else { // rejected
+                    // Email
+                    if (isset($notification_options['email_submission_rejected']) && $notification_options['email_submission_rejected'] === '1') {
+                        $subject = 'Project Step Rejected: ' . $project_title;
+                        $email_message = "<p>Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been rejected.</p>";
+                        if ($comment) $email_message .= "<p>Reason: " . esc_html($comment) . "</p>";
+                        wp_mail($vendor->user_email, $subject, $email_message, ['Content-Type: text/html; charset=UTF-8']);
+                    }
+                    // WhatsApp
+                    if (isset($notification_options['whatsapp_enable']) && isset($notification_options['whatsapp_submission_rejected']) && $notification_options['whatsapp_submission_rejected'] === '1' && !empty($vendor_phone)) {
+                        $whatsapp_message = "Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been rejected.";
+                        if ($comment) $whatsapp_message .= "\nReason: " . esc_html($comment);
+                         $whatsapp_data = [
+                            'phone' => '91' . preg_replace('/\D/', '', $vendor_phone),
+                            'message' => urlencode($whatsapp_message)
+                        ];
+                    }
+                }
+            }
+        }
+
+        return [
+            'success' => true, 
+            'message' => 'Step has been ' . $decision . '.',
+            'whatsapp_data' => $whatsapp_data
+        ];
     }
 
 

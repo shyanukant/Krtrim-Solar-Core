@@ -147,8 +147,11 @@ final class Krtrim_Solar_Core {
 				'get_projects_nonce' => wp_create_nonce('get_projects_nonce'),
 				'get_reviews_nonce' => wp_create_nonce('get_reviews_nonce'),
 				'get_vendor_approvals_nonce' => wp_create_nonce('get_vendor_approvals_nonce'),
-				'create_vendor_nonce' => wp_create_nonce('create_vendor_nonce'),
 				'create_client_nonce' => wp_create_nonce('create_client_nonce'),
+                'get_leads_nonce' => wp_create_nonce('get_leads_nonce'),
+                'create_lead_nonce' => wp_create_nonce('create_lead_nonce'),
+                'delete_lead_nonce' => wp_create_nonce('delete_lead_nonce'),
+                'send_message_nonce' => wp_create_nonce('send_message_nonce'),
 				'states_cities_json_url' => $this->dir_url . 'assets/data/indian-states-cities.json',
 			]);
 		}

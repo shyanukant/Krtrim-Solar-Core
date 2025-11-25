@@ -35,9 +35,13 @@ class SP_API_Handlers {
         add_action('wp_ajax_nopriv_filter_marketplace_projects', [ $this, 'filter_marketplace_projects' ]);
         add_action('wp_ajax_get_area_manager_reviews', [ $this, 'get_area_manager_reviews' ]);
         add_action('wp_ajax_get_area_manager_vendor_approvals', [ $this, 'get_area_manager_vendor_approvals' ]);
-        add_action('wp_ajax_create_vendor_from_dashboard', [ $this, 'create_vendor_from_dashboard' ]);
-        add_action('wp_ajax_create_client_from_dashboard', [ $this, 'create_client_from_dashboard' ]);
         add_action('wp_ajax_get_area_manager_dashboard_stats', [ $this, 'get_area_manager_dashboard_stats' ]);
+        
+        // Lead Management
+        add_action('wp_ajax_get_area_manager_leads', [ $this, 'get_area_manager_leads' ]);
+        add_action('wp_ajax_create_solar_lead', [ $this, 'create_solar_lead' ]);
+        add_action('wp_ajax_delete_solar_lead', [ $this, 'delete_solar_lead' ]);
+        add_action('wp_ajax_send_lead_message', [ $this, 'send_lead_message' ]);
     }
 
     public function get_area_manager_dashboard_stats() {
@@ -126,6 +130,142 @@ class SP_API_Handlers {
         }
 
         wp_send_json_success(['labels' => array_keys($earnings), 'data' => array_values($earnings)]);
+    }
+
+    public function get_area_manager_leads() {
+        check_ajax_referer('get_leads_nonce', 'nonce');
+
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $manager_id = get_current_user_id();
+        $args = [
+            'post_type' => 'solar_lead',
+            'posts_per_page' => -1,
+            'author' => $manager_id,
+            'orderby' => 'date',
+            'order' => 'DESC',
+        ];
+
+        $leads_query = new WP_Query($args);
+        $leads = [];
+
+        if ($leads_query->have_posts()) {
+            while ($leads_query->have_posts()) {
+                $leads_query->the_post();
+                $leads[] = [
+                    'id' => get_the_ID(),
+                    'name' => get_the_title(),
+                    'email' => get_post_meta(get_the_ID(), '_lead_email', true),
+                    'phone' => get_post_meta(get_the_ID(), '_lead_phone', true),
+                    'status' => get_post_meta(get_the_ID(), '_lead_status', true) ?: 'new',
+                    'notes' => get_the_content(),
+                    'created_at' => get_the_date('Y-m-d'),
+                ];
+            }
+        }
+        wp_reset_postdata();
+
+        wp_send_json_success(['leads' => $leads]);
+    }
+
+    public function create_solar_lead() {
+        check_ajax_referer('create_lead_nonce', 'nonce');
+
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $name = sanitize_text_field($_POST['name']);
+        $email = sanitize_email($_POST['email']);
+        $phone = sanitize_text_field($_POST['phone']);
+        $status = sanitize_text_field($_POST['status']);
+        $notes = sanitize_textarea_field($_POST['notes']);
+
+        if (empty($name) || empty($phone)) {
+            wp_send_json_error(['message' => 'Name and Phone are required.']);
+        }
+
+        $lead_data = [
+            'post_title' => $name,
+            'post_content' => $notes,
+            'post_status' => 'publish',
+            'post_type' => 'solar_lead',
+            'post_author' => get_current_user_id(),
+        ];
+
+        $lead_id = wp_insert_post($lead_data);
+
+        if (is_wp_error($lead_id)) {
+            wp_send_json_error(['message' => 'Error creating lead.']);
+        }
+
+        update_post_meta($lead_id, '_lead_email', $email);
+        update_post_meta($lead_id, '_lead_phone', $phone);
+        update_post_meta($lead_id, '_lead_status', $status);
+
+        wp_send_json_success(['message' => 'Lead created successfully!']);
+    }
+
+    public function delete_solar_lead() {
+        check_ajax_referer('delete_lead_nonce', 'nonce');
+
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $lead_id = intval($_POST['lead_id']);
+        $lead = get_post($lead_id);
+
+        if (!$lead || $lead->post_type !== 'solar_lead' || $lead->post_author != get_current_user_id()) {
+            wp_send_json_error(['message' => 'Invalid lead or permission denied.']);
+        }
+
+        wp_delete_post($lead_id, true);
+        wp_send_json_success(['message' => 'Lead deleted successfully.']);
+    }
+
+    public function send_lead_message() {
+        check_ajax_referer('send_message_nonce', 'nonce');
+
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $lead_id = intval($_POST['lead_id']);
+        $type = sanitize_text_field($_POST['type']); // 'email' or 'whatsapp'
+        $message_content = sanitize_textarea_field($_POST['message']);
+
+        $lead = get_post($lead_id);
+        if (!$lead || $lead->post_type !== 'solar_lead' || $lead->post_author != get_current_user_id()) {
+            wp_send_json_error(['message' => 'Invalid lead.']);
+        }
+
+        $email = get_post_meta($lead_id, '_lead_email', true);
+        $phone = get_post_meta($lead_id, '_lead_phone', true);
+
+        if ($type === 'email') {
+            if (empty($email)) {
+                wp_send_json_error(['message' => 'Lead does not have an email address.']);
+            }
+            $subject = 'Message from ' . get_bloginfo('name');
+            $sent = wp_mail($email, $subject, $message_content);
+            if ($sent) {
+                wp_send_json_success(['message' => 'Email sent successfully.']);
+            } else {
+                wp_send_json_error(['message' => 'Failed to send email.']);
+            }
+        } elseif ($type === 'whatsapp') {
+            if (empty($phone)) {
+                wp_send_json_error(['message' => 'Lead does not have a phone number.']);
+            }
+            // For WhatsApp, we return the URL for the frontend to open
+            $whatsapp_url = "https://wa.me/" . preg_replace('/\D/', '', $phone) . "?text=" . urlencode($message_content);
+            wp_send_json_success(['message' => 'Opening WhatsApp...', 'whatsapp_url' => $whatsapp_url]);
+        } else {
+            wp_send_json_error(['message' => 'Invalid message type.']);
+        }
     }
 
     public function create_client_from_dashboard() {
@@ -856,71 +996,16 @@ class SP_API_Handlers {
             wp_send_json_error(['message' => 'You do not have permission to review this submission.']);
         }
 
-        $wpdb->update(
-            $steps_table,
-            [
-                'admin_status' => $decision,
-                'admin_comment' => $comment,
-                'approved_date' => current_time('mysql'),
-            ],
-            ['id' => $step_id],
-            ['%s', '%s', '%s'],
-            ['%d']
-        );
+        $result = SP_Process_Steps_Manager::process_step_review($step_id, $decision, $comment, $manager->ID);
 
-        $submission = $wpdb->get_row($wpdb->prepare("SELECT project_id, step_number, step_name FROM {$steps_table} WHERE id = %d", $step_id));
-        $whatsapp_data = null;
-
-        if ($submission) {
-            $project_id = $submission->project_id;
-            $vendor_id = get_post_meta($project_id, '_assigned_vendor_id', true);
-            $vendor = get_userdata($vendor_id);
-            $project_title = get_the_title($project_id);
-
-            if ($vendor) {
-                $notification_options = get_option('sp_notification_options');
-                $vendor_phone = get_user_meta($vendor_id, 'phone', true);
-                $whatsapp_message = '';
-
-                if ($decision === 'approved') {
-                    if (isset($notification_options['email_submission_approved']) && $notification_options['email_submission_approved'] === '1') {
-                        $subject = 'Project Step Approved: ' . $project_title;
-                        $email_message = "<p>Good news! Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been approved.</p>";
-                        if ($comment) $email_message .= "<p>Admin comment: " . esc_html($comment) . "</p>";
-                        wp_mail($vendor->user_email, $subject, $email_message, ['Content-Type: text/html; charset=UTF-8']);
-                    }
-                    if (isset($notification_options['whatsapp_enable']) && isset($notification_options['whatsapp_submission_approved']) && $notification_options['whatsapp_submission_approved'] === '1' && !empty($vendor_phone)) {
-                        $whatsapp_message = "Good news! Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been approved.";
-                        if ($comment) $whatsapp_message .= "\nAdmin comment: " . esc_html($comment);
-                        $whatsapp_data = [
-                            'phone' => '91' . preg_replace('/\D/', '', $vendor_phone),
-                            'message' => urlencode($whatsapp_message)
-                        ];
-                    }
-
-                } else { // rejected
-                    if (isset($notification_options['email_submission_rejected']) && $notification_options['email_submission_rejected'] === '1') {
-                        $subject = 'Project Step Rejected: ' . $project_title;
-                        $email_message = "<p>Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been rejected.</p>";
-                        if ($comment) $email_message .= "<p>Reason: " . esc_html($comment) . "</p>";
-                        wp_mail($vendor->user_email, $subject, $email_message, ['Content-Type: text/html; charset=UTF-8']);
-                    }
-                    if (isset($notification_options['whatsapp_enable']) && isset($notification_options['whatsapp_submission_rejected']) && $notification_options['whatsapp_submission_rejected'] === '1' && !empty($vendor_phone)) {
-                        $whatsapp_message = "Step " . $submission->step_number . " (" . $submission->step_name . ") for project '" . $project_title . "' has been rejected.";
-                        if ($comment) $whatsapp_message .= "\nReason: " . esc_html($comment);
-                         $whatsapp_data = [
-                            'phone' => '91' . preg_replace('/\D/', '', $vendor_phone),
-                            'message' => urlencode($whatsapp_message)
-                        ];
-                    }
-                }
-            }
+        if ($result['success']) {
+            wp_send_json_success([
+                'message' => 'Submission status updated successfully.',
+                'whatsapp_data' => $result['whatsapp_data']
+            ]);
+        } else {
+            wp_send_json_error(['message' => $result['message']]);
         }
-
-        wp_send_json_success([
-            'message' => 'Submission status updated successfully.',
-            'whatsapp_data' => $whatsapp_data
-        ]);
     }
 
     public function create_solar_project() {

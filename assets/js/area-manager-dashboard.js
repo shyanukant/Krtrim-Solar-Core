@@ -63,6 +63,8 @@ jQuery(document).ready(function ($) {
             loadReviews();
         } else if (section === 'vendor-approvals') {
             loadVendorApprovals();
+        } else if (section === 'leads') {
+            loadLeads();
         }
     });
 
@@ -259,36 +261,158 @@ jQuery(document).ready(function ($) {
         });
     });
 
-    // --- Create Vendor ---
-    $('#create-vendor-form').on('submit', function (e) {
+    // --- Lead Management ---
+    function loadLeads() {
+        $('#leads-list-container').html('<p>Loading leads...</p>');
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'get_area_manager_leads',
+                nonce: sp_area_dashboard_vars.get_leads_nonce,
+            },
+            success: function (response) {
+                if (response.success) {
+                    let html = '';
+                    if (response.data.leads.length > 0) {
+                        html += '<table class="wp-list-table widefat fixed striped"><thead><tr><th>Name</th><th>Phone</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead><tbody>';
+                        response.data.leads.forEach(lead => {
+                            html += `
+                                <tr>
+                                    <td>${lead.name}</td>
+                                    <td>${lead.phone}</td>
+                                    <td>${lead.email}</td>
+                                    <td><span class="badge status-${lead.status}">${lead.status}</span></td>
+                                    <td>
+                                        <button class="button button-small open-msg-modal" data-type="email" data-lead-id="${lead.id}" data-recipient="${lead.email}" ${!lead.email ? 'disabled' : ''}>Email</button>
+                                        <button class="button button-small open-msg-modal" data-type="whatsapp" data-lead-id="${lead.id}" data-recipient="${lead.phone}" ${!lead.phone ? 'disabled' : ''}>WhatsApp</button>
+                                        <button class="button button-small button-link-delete delete-lead-btn" data-lead-id="${lead.id}" style="color:red;">Delete</button>
+                                    </td>
+                                </tr>
+                                <tr><td colspan="5"><small><em>${lead.notes}</em></small></td></tr>
+                            `;
+                        });
+                        html += '</tbody></table>';
+                    } else {
+                        html = '<p>No leads found.</p>';
+                    }
+                    $('#leads-list-container').html(html);
+                } else {
+                    $('#leads-list-container').html('<p class="text-danger">Error loading leads.</p>');
+                }
+            }
+        });
+    }
+
+    $('#create-lead-form').on('submit', function (e) {
         e.preventDefault();
         const form = $(this);
-        const feedback = $('#create-vendor-feedback');
+        const feedback = $('#create-lead-feedback');
 
         $.ajax({
             url: ajaxUrl,
             type: 'POST',
             data: {
-                action: 'create_vendor_from_dashboard',
-                username: $('#vendor_username').val(),
-                email: $('#vendor_email').val(),
-                password: $('#vendor_password').val(),
-                nonce: sp_area_dashboard_vars.create_vendor_nonce,
+                action: 'create_solar_lead',
+                nonce: sp_area_dashboard_vars.create_lead_nonce,
+                name: $('#lead_name').val(),
+                phone: $('#lead_phone').val(),
+                email: $('#lead_email').val(),
+                status: $('#lead_status').val(),
+                notes: $('#lead_notes').val(),
             },
             beforeSend: function () {
-                form.find('button').prop('disabled', true).text('Creating...');
+                form.find('button').prop('disabled', true).text('Adding...');
                 feedback.text('').removeClass('text-success text-danger');
             },
             success: function (response) {
                 if (response.success) {
                     feedback.text(response.data.message).addClass('text-success');
                     form[0].reset();
+                    loadLeads();
                 } else {
                     feedback.text(response.data.message).addClass('text-danger');
                 }
             },
             complete: function () {
-                form.find('button').prop('disabled', false).text('Create Vendor');
+                form.find('button').prop('disabled', false).text('Add Lead');
+            }
+        });
+    });
+
+    $(document).on('click', '.delete-lead-btn', function () {
+        if (!confirm('Are you sure you want to delete this lead?')) return;
+        const leadId = $(this).data('lead-id');
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'delete_solar_lead',
+                nonce: sp_area_dashboard_vars.delete_lead_nonce,
+                lead_id: leadId,
+            },
+            success: function (response) {
+                if (response.success) {
+                    loadLeads();
+                } else {
+                    alert(response.data.message);
+                }
+            }
+        });
+    });
+
+    // Message Modal
+    $(document).on('click', '.open-msg-modal', function (e) {
+        e.preventDefault();
+        const type = $(this).data('type');
+        const leadId = $(this).data('lead-id');
+        const recipient = $(this).data('recipient');
+
+        $('#msg_type').val(type);
+        $('#msg_lead_id').val(leadId);
+        $('#msg_recipient').text(recipient + ' (' + type + ')');
+        $('#message-modal').show();
+    });
+
+    $('.close-modal').on('click', function () {
+        $('#message-modal').hide();
+    });
+
+    $('#send-message-form').on('submit', function (e) {
+        e.preventDefault();
+        const form = $(this);
+        const feedback = $('#send-message-feedback');
+        const type = $('#msg_type').val();
+
+        $.ajax({
+            url: ajaxUrl,
+            type: 'POST',
+            data: {
+                action: 'send_lead_message',
+                nonce: sp_area_dashboard_vars.send_message_nonce,
+                lead_id: $('#msg_lead_id').val(),
+                type: type,
+                message: $('#msg_content').val(),
+            },
+            beforeSend: function () {
+                form.find('button').prop('disabled', true).text('Sending...');
+                feedback.text('');
+            },
+            success: function (response) {
+                if (response.success) {
+                    if (type === 'whatsapp' && response.data.whatsapp_url) {
+                        window.open(response.data.whatsapp_url, '_blank');
+                        feedback.text('WhatsApp opened.').addClass('text-success');
+                    } else {
+                        feedback.text(response.data.message).addClass('text-success');
+                    }
+                    setTimeout(() => { $('#message-modal').hide(); form[0].reset(); feedback.text(''); }, 2000);
+                } else {
+                    feedback.text(response.data.message).addClass('text-danger');
+                }
+            },
+            complete: function () {
+                form.find('button').prop('disabled', false).text('Send');
             }
         });
     });
