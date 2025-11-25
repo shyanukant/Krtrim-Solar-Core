@@ -1,0 +1,238 @@
+<?php
+/**
+ * Plugin Name:       Krtrim Solar Core
+ * Plugin URI:        https://krtrim.tech/krtrim-solar-core
+ * Description:       A comprehensive project management and bidding platform for solar companies, developed by Krtrim.
+ * Version:           2.0.1
+ * Author:            Shyanukant Rathi
+ * Author URI:        https://krtrim.tech
+ * License:           GPL-2.0+
+ * License URI:       http://www.gnu.org/licenses/gpl-2.0.txt
+ * Text Domain:       krtrim-solar-core
+ * Domain Path:       /languages
+ */
+
+// If this file is called directly, abort.
+if ( ! defined( 'WPINC' ) ) {
+	die;
+}
+
+/**
+ * The core plugin class.
+ */
+final class Krtrim_Solar_Core {
+
+	private static $instance = null;
+	public $version = '2.0.1';
+	public $file = __FILE__;
+	public $dir_path;
+	public $dir_url;
+
+	public static function instance() {
+		if ( is_null( self::$instance ) ) {
+			self::$instance = new self();
+		}
+		return self::$instance;
+	}
+
+	private function __construct() {
+		$this->define_constants();
+		$this->load_dependencies();
+		$this->init_hooks();
+	}
+
+	private function define_constants() {
+		$this->dir_path = plugin_dir_path( $this->file );
+		$this->dir_url  = plugin_dir_url( $this->file );
+	}
+
+	private function load_dependencies() {
+		require_once $this->dir_path . 'includes/class-post-types-taxonomies.php';
+		require_once $this->dir_path . 'includes/class-admin-menus.php';
+		require_once $this->dir_path . 'includes/class-api-handlers.php';
+		require_once $this->dir_path . 'includes/class-razorpay-light-client.php';
+		require_once $this->dir_path . 'includes/class-custom-metaboxes.php';
+		require_once $this->dir_path . 'includes/class-user-profile-fields.php';
+		require_once $this->dir_path . 'includes/class-process-steps-manager.php';
+		require_once $this->dir_path . 'includes/class-notifications-manager.php';
+		require_once $this->dir_path . 'admin/views/view-vendor-approval.php';
+		require_once $this->dir_path . 'admin/views/view-project-reviews.php';
+		require_once $this->dir_path . 'admin/views/view-notification-settings.php';
+		require_once $this->dir_path . 'admin/views/view-vendor-settings.php';
+		require_once $this->dir_path . 'admin/views/view-team-analysis.php';
+		require_once $this->dir_path . 'public/views/view-client-dashboard.php';
+		require_once $this->dir_path . 'public/views/view-vendor-dashboard.php';
+		require_once $this->dir_path . 'public/views/view-area-manager-dashboard.php';
+		require_once $this->dir_path . 'public/views/view-marketplace.php';
+		require_once $this->dir_path . 'public/views/view-vendor-registration.php';
+	}
+
+	private function init_hooks() {
+		new SP_Post_Types_Taxonomies();
+		new SP_Admin_Menus();
+		new SP_API_Handlers();
+		new SP_User_Profile_Fields();
+		new SP_Process_Steps_Manager();
+		new SP_Notifications_Manager();
+
+		register_activation_hook( $this->file, [ $this, 'activate' ] );
+
+		add_action( 'wp_enqueue_scripts', [ $this, 'enqueue_public_scripts' ] );
+		add_action( 'admin_enqueue_scripts', [ $this, 'enqueue_admin_scripts' ] );
+
+		add_shortcode( 'unified_solar_dashboard', [ $this, 'shortcode_unified_dashboard' ] );
+		add_shortcode( 'area_manager_dashboard', 'sp_area_manager_dashboard_shortcode' );
+		add_shortcode( 'vendor_registration_form', 'sp_vendor_registration_form_shortcode' );
+		add_shortcode( 'solar_project_marketplace', 'sp_project_marketplace_shortcode' );
+		
+		add_filter( 'template_include', [ $this, 'template_include_single_project' ] );
+	}
+
+	public function activate() {
+		sp_create_plugin_essentials();
+		flush_rewrite_rules();
+	}
+
+	public function enqueue_public_scripts() {
+		wp_enqueue_style( 'ksc-public-styles', $this->dir_url . 'assets/css/dashboard.css', [], $this->version );
+		wp_enqueue_script( 'ksc-public-scripts', $this->dir_url . 'assets/js/dashboard.js', [ 'jquery' ], $this->version, true );
+	}
+
+	public function enqueue_admin_scripts( $hook ) {
+		wp_enqueue_style( 'ksc-admin-styles', $this->dir_url . 'assets/css/admin.css', [], $this->version );
+		wp_enqueue_script( 'ksc-admin-scripts', $this->dir_url . 'assets/js/admin.js', [ 'jquery' ], $this->version, true );
+	}
+	
+	public function shortcode_unified_dashboard() {
+		if ( ! is_user_logged_in() ) {
+			return '<p>Please <a href="' . esc_url( wp_login_url( get_permalink() ) ) . '">login</a> to view your dashboard.</p>';
+		}
+
+		$current_user = wp_get_current_user();
+		$user_roles   = $current_user->roles;
+
+		ob_start();
+		if ( in_array( 'solar_client', $user_roles, true ) || in_array( 'administrator', $user_roles, true ) ) {
+			render_solar_client_dashboard();
+		} elseif ( in_array( 'solar_vendor', $user_roles, true ) || in_array( 'vendor', $user_roles, true ) ) {
+			render_solar_vendor_dashboard();
+		} else {
+			echo '<p>You do not have the required role to view this dashboard.</p>';
+		}
+		return ob_get_clean();
+	}
+	
+	public function template_include_single_project( $template ) {
+		if ( is_singular( 'solar_project' ) ) {
+			$new_template = $this->dir_path . 'public/views/single-solar_project.php';
+			if ( '' !== $new_template ) {
+				return $new_template;
+			}
+		}
+		return $template;
+	}
+}
+
+function run_krtrim_solar_core() {
+	return Krtrim_Solar_Core::instance();
+}
+run_krtrim_solar_core();
+
+function sp_create_plugin_essentials() {
+	global $wpdb;
+	$charset_collate = $wpdb->get_charset_collate();
+	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
+
+	$bids_table_name = $wpdb->prefix . 'project_bids';
+	$sql_bids        = "CREATE TABLE $bids_table_name ( id mediumint(9) NOT NULL AUTO_INCREMENT, project_id bigint(20) NOT NULL, vendor_id bigint(20) NOT NULL, bid_amount decimal(10, 2) NOT NULL, bid_type varchar(10) NOT NULL DEFAULT 'open', bid_details text, created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY  (id) ) $charset_collate;";
+	dbDelta( $sql_bids );
+
+	$payments_table_name = $wpdb->prefix . 'solar_vendor_payments';
+	$sql_payments        = "CREATE TABLE $payments_table_name ( id mediumint(9) NOT NULL AUTO_INCREMENT, vendor_id bigint(20) NOT NULL, razorpay_payment_id varchar(255) NOT NULL, razorpay_order_id varchar(255) NOT NULL, amount decimal(10, 2) NOT NULL, states_purchased text, cities_purchased text, payment_status varchar(50) NOT NULL, payment_date datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY  (id) ) $charset_collate;";
+	dbDelta( $sql_payments );
+
+	$table_process = $wpdb->prefix . 'solar_process_steps';
+    $sql_process = "CREATE TABLE IF NOT EXISTS $table_process (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        project_id bigint(20) NOT NULL,
+        step_number int(11) NOT NULL,
+        step_name varchar(200) NOT NULL,
+        image_url varchar(500),
+        vendor_comment text,
+        client_comment text,
+        admin_comment text,
+        admin_status varchar(20) DEFAULT 'pending',
+        approved_date datetime,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        updated_at datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY project_id (project_id),
+        KEY admin_status (admin_status)
+    ) $charset_collate;";
+	dbDelta( $sql_process );
+
+    $table_notifications = $wpdb->prefix . 'solar_notifications';
+    $sql_notifications = "CREATE TABLE IF NOT EXISTS $table_notifications (
+        id bigint(20) NOT NULL AUTO_INCREMENT,
+        user_id bigint(20) NOT NULL,
+        project_id bigint(20),
+        message text NOT NULL,
+        type varchar(50) DEFAULT 'info',
+        status varchar(20) DEFAULT 'unread',
+        sent_email tinyint(1) DEFAULT 0,
+        sent_whatsapp tinyint(1) DEFAULT 0,
+        created_at datetime DEFAULT CURRENT_TIMESTAMP,
+        PRIMARY KEY (id),
+        KEY user_id (user_id),
+        KEY status (status)
+    ) $charset_collate;";
+	dbDelta( $sql_notifications );
+
+	// Create custom roles
+	$roles = [
+		'manager'      => [
+			'display_name' => 'Manager',
+			'capabilities' => [ 'read' => true ],
+		],
+		'area_manager' => [
+			'display_name' => 'Area Manager',
+			'capabilities' => [ 'read' => true ],
+		],
+		'solar_vendor' => [
+			'display_name' => 'Solar Vendor',
+			'capabilities' => [ 'read' => true ],
+		],
+		'solar_client' => [
+			'display_name' => 'Solar Client',
+			'capabilities' => [ 'read' => true ],
+		],
+	];
+
+	foreach ( $roles as $role => $details ) {
+		if ( ! get_role( $role ) ) {
+			add_role( $role, $details['display_name'], $details['capabilities'] );
+		}
+	}
+
+	$pages_to_create = [
+		['title' => 'Dashboard', 'slug' => 'solar-dashboard', 'content' => '[unified_solar_dashboard]'],
+		['title' => 'Area Manager Dashboard', 'slug' => 'area-manager-dashboard', 'content' => '[area_manager_dashboard]'],
+		['title' => 'Vendor Registration', 'slug' => 'vendor-registration', 'content' => '[vendor_registration_form]'],
+		['title' => 'Project Marketplace', 'slug' => 'project-marketplace', 'content' => '[solar_project_marketplace]']
+	];
+
+	foreach ( $pages_to_create as $page ) {
+		if ( ! get_page_by_path( $page['slug'], OBJECT, 'page' ) ) {
+			wp_insert_post(
+				[
+					'post_title'   => wp_strip_all_tags( $page['title'] ),
+					'post_content' => $page['content'],
+					'post_status'  => 'publish',
+					'post_author'  => 1,
+					'post_type'    => 'page',
+					'post_name'    => $page['slug'],
+				]
+			);
+		}
+	}
+}
