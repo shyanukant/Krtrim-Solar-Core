@@ -30,6 +30,107 @@ class SP_API_Handlers {
         add_action('wp_ajax_nopriv_filter_projects', [ $this, 'filter_projects' ]);
         add_action('wp_ajax_vendor_submit_step', [ $this, 'vendor_submit_step' ]);
         add_action('wp_ajax_client_submit_step_comment', [ $this, 'client_submit_step_comment' ]);
+        add_action('wp_ajax_assign_area_manager_location', [ $this, 'assign_area_manager_location' ]);
+        add_action('wp_ajax_filter_marketplace_projects', [ $this, 'filter_marketplace_projects' ]);
+        add_action('wp_ajax_nopriv_filter_marketplace_projects', [ $this, 'filter_marketplace_projects' ]);
+    }
+
+    public function filter_marketplace_projects() {
+        check_ajax_referer('filter_projects_nonce', 'nonce');
+
+        $state = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
+        $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
+        $budget = isset($_POST['budget']) ? floatval($_POST['budget']) : 0;
+
+        $args = [
+            'post_type' => 'solar_project',
+            'posts_per_page' => -1,
+            'meta_query' => ['relation' => 'AND'],
+            'tax_query' => ['relation' => 'AND'],
+        ];
+
+        if (!empty($state)) {
+            $args['meta_query'][] = [
+                'key' => 'project_state',
+                'value' => $state,
+                'compare' => '=',
+            ];
+        }
+
+        if (!empty($city)) {
+            $args['tax_query'][] = [
+                'taxonomy' => 'project_city',
+                'field' => 'name',
+                'terms' => $city,
+            ];
+        }
+
+        if (!empty($budget)) {
+            $args['meta_query'][] = [
+                'key' => 'total_project_cost',
+                'value' => $budget,
+                'type' => 'NUMERIC',
+                'compare' => '<=',
+            ];
+        }
+
+        $projects_query = new WP_Query($args);
+        $projects_data = [];
+
+        if ($projects_query->have_posts()) {
+            while ($projects_query->have_posts()) {
+                $projects_query->the_post();
+                $project_id = get_the_ID();
+                
+                $state = get_post_meta($project_id, 'project_state', true);
+                $city_terms = get_the_terms($project_id, 'project_city');
+                $city = 'N/A';
+                if ($city_terms && !is_wp_error($city_terms)) {
+                    $city = $city_terms[0]->name;
+                }
+
+                $location = 'N/A';
+                if ($city != 'N/A' && $state) {
+                    $location = $city . ', ' . $state;
+                } elseif ($city != 'N/A') {
+                    $location = $city;
+                } elseif ($state) {
+                    $location = $state;
+                }
+
+                $projects_data[] = [
+                    'id' => $project_id,
+                    'title' => get_the_title(),
+                    'location' => $location,
+                    'budget' => get_post_meta($project_id, 'total_project_cost', true),
+                    'link' => get_permalink(),
+                ];
+            }
+        }
+        wp_reset_postdata();
+
+        wp_send_json_success(['projects' => $projects_data]);
+    }
+
+    public function assign_area_manager_location() {
+        check_ajax_referer('assign_location_nonce', 'nonce');
+
+        if (!current_user_can('manage_options')) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $manager_id = isset($_POST['manager_id']) ? intval($_POST['manager_id']) : 0;
+        $state = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
+        $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
+
+        if (empty($manager_id) || empty($state) || empty($city)) {
+            wp_send_json_error(['message' => 'Invalid data provided.']);
+        }
+
+        update_user_meta($manager_id, 'assigned_state', $state);
+        update_user_meta($manager_id, 'assigned_city', $city);
+
+        wp_send_json_success(['message' => 'Location assigned successfully.']);
     }
 
     public function client_submit_step_comment() {
@@ -378,8 +479,8 @@ class SP_API_Handlers {
     public function award_project_to_vendor() {
         check_ajax_referer('award_bid_nonce', 'nonce');
 
-        if (!current_user_can('edit_posts')) {
-            wp_send_json_error(['message' => 'You do not have permission to award projects.']);
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
         }
 
         $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
@@ -390,9 +491,18 @@ class SP_API_Handlers {
             wp_send_json_error(['message' => 'Invalid project or vendor ID.']);
         }
 
+        $project = get_post($project_id);
+        $manager = wp_get_current_user();
+
+        if (!$project || $project->post_author != $manager->ID) {
+            wp_send_json_error(['message' => 'You do not have permission to award this project.']);
+        }
+
         update_post_meta($project_id, 'winning_vendor_id', $vendor_id);
         update_post_meta($project_id, 'winning_bid_amount', $bid_amount);
         update_post_meta($project_id, 'assigned_vendor_id', $vendor_id);
+        update_post_meta($project_id, 'total_project_cost', $bid_amount);
+        update_post_meta($project_id, '_project_status', 'assigned');
 
         wp_update_post(['ID' => $project_id, 'post_status' => 'assigned']);
 
@@ -498,7 +608,7 @@ class SP_API_Handlers {
     public function review_vendor_submission() {
         check_ajax_referer('sp_review_nonce', 'nonce');
 
-        if (!current_user_can('edit_posts')) {
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
             wp_send_json_error(['message' => 'Permission denied.']);
         }
 
@@ -512,6 +622,18 @@ class SP_API_Handlers {
 
         global $wpdb;
         $steps_table = $wpdb->prefix . 'solar_process_steps';
+        $submission = $wpdb->get_row($wpdb->prepare("SELECT project_id FROM {$steps_table} WHERE id = %d", $step_id));
+
+        if (!$submission) {
+            wp_send_json_error(['message' => 'Invalid submission.']);
+        }
+
+        $project = get_post($submission->project_id);
+        $manager = wp_get_current_user();
+
+        if (!$project || $project->post_author != $manager->ID) {
+            wp_send_json_error(['message' => 'You do not have permission to review this submission.']);
+        }
 
         $wpdb->update(
             $steps_table,
@@ -581,7 +703,7 @@ class SP_API_Handlers {
     }
 
     public function create_solar_project() {
-        check_ajax_referer('sp_create_project_nonce', 'nonce');
+        check_ajax_referer('sp_create_project_nonce', 'sp_create_project_nonce_field');
 
         if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
             wp_send_json_error(['message' => 'Permission denied.']);
@@ -630,27 +752,18 @@ class SP_API_Handlers {
     }
 
     public function get_area_manager_projects() {
+        check_ajax_referer('sp_area_dashboard_vars', 'security');
+
         if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
             wp_send_json_error(['message' => 'Permission denied.']);
         }
 
         $manager = wp_get_current_user();
-        $city_id = get_user_meta($manager->ID, 'assigned_city', true);
-
-        if (empty($city_id)) {
-            wp_send_json_error(['message' => 'Area Manager is not assigned to a city.']);
-        }
 
         $args = [
             'post_type' => 'solar_project',
             'posts_per_page' => -1,
-            'tax_query' => [
-                [
-                    'taxonomy' => 'project_city',
-                    'field'    => 'term_id',
-                    'terms'    => $city_id,
-                ],
-            ],
+            'author' => $manager->ID,
             'orderby' => 'date',
             'order' => 'DESC',
         ];
@@ -683,7 +796,52 @@ class SP_API_Handlers {
     }
 
     public function get_area_manager_project_details() {
-        // ... (existing function)
+        check_ajax_referer('sp_project_details_nonce', 'nonce');
+
+        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+            wp_send_json_error(['message' => 'Permission denied.']);
+        }
+
+        $project_id = isset($_POST['project_id']) ? intval($_POST['project_id']) : 0;
+        if (empty($project_id)) {
+            wp_send_json_error(['message' => 'Invalid project ID.']);
+        }
+
+        $manager = wp_get_current_user();
+        $project = get_post($project_id);
+
+        if (!$project || $project->post_author != $manager->ID) {
+            wp_send_json_error(['message' => 'You do not have permission to view this project.']);
+        }
+
+        // Get project meta
+        $meta = [
+            'System Size' => get_post_meta($project_id, '_solar_system_size_kw', true) . ' kW',
+            'Client Address' => get_post_meta($project_id, '_client_address', true),
+            'Status' => get_post_meta($project_id, '_project_status', true),
+        ];
+
+        // Get vendor submissions
+        global $wpdb;
+        $steps_table = $wpdb->prefix . 'solar_process_steps';
+        $submissions = $wpdb->get_results($wpdb->prepare(
+            "SELECT * FROM {$steps_table} WHERE project_id = %d ORDER BY step_number ASC",
+            $project_id
+        ));
+
+        // Get project bids
+        $bids_table = $wpdb->prefix . 'project_bids';
+        $bids = $wpdb->get_results($wpdb->prepare(
+            "SELECT b.*, u.display_name as vendor_name FROM {$bids_table} b JOIN {$wpdb->users} u ON b.vendor_id = u.ID WHERE b.project_id = %d ORDER BY b.created_at DESC",
+            $project_id
+        ));
+
+        wp_send_json_success([
+            'title' => $project->post_title,
+            'meta' => $meta,
+            'submissions' => $submissions,
+            'bids' => $bids,
+        ]);
     }
 
     public function complete_vendor_registration() {

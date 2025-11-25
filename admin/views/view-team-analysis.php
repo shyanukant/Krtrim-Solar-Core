@@ -48,6 +48,8 @@ function sp_render_leaderboard_view() {
             'total_projects' => $total_projects,
             'paid_to_vendors' => $paid_to_vendors,
             'company_profit' => $company_profit,
+            'assigned_state' => get_user_meta($manager->ID, 'assigned_state', true),
+            'assigned_city' => get_user_meta($manager->ID, 'assigned_city', true),
         ];
 
         $chart_labels[] = $manager->display_name;
@@ -65,6 +67,7 @@ function sp_render_leaderboard_view() {
                     <thead>
                         <tr>
                             <th scope="col" class="manage-column">Manager</th>
+                            <th scope="col" class="manage-column">Assigned Location</th>
                             <th scope="col" class="manage-column">Total Projects</th>
                             <th scope="col" class="manage-column">Amount Paid to Vendors</th>
                             <th scope="col" class="manage-column">Company Profit</th>
@@ -79,6 +82,16 @@ function sp_render_leaderboard_view() {
                                 ?>
                                 <tr>
                                     <td><strong><a href="?page=team-analysis&manager_id=<?php echo $data['id']; ?>"><?php echo esc_html($data['name']); ?></a></strong></td>
+                                    <td>
+                                        <?php
+                                        if ($data['assigned_state'] && $data['assigned_city']) {
+                                            echo esc_html($data['assigned_city'] . ', ' . $data['assigned_state']);
+                                        } else {
+                                            echo 'Not Assigned';
+                                        }
+                                        ?>
+                                        <button class="button button-small change-location-btn" data-manager-id="<?php echo $data['id']; ?>">Change</button>
+                                    </td>
                                     <td><?php echo $data['total_projects']; ?></td>
                                     <td>₹<?php echo number_format($data['paid_to_vendors'], 2); ?></td>
                                     <td>₹<?php echo number_format($data['company_profit'], 2); ?></td>
@@ -87,7 +100,7 @@ function sp_render_leaderboard_view() {
                                 <?php
                             }
                         } else {
-                            echo '<tr><td colspan="5">No Area Managers found.</td></tr>';
+                            echo '<tr><td colspan="6">No Area Managers found.</td></tr>';
                         }
                         ?>
                     </tbody>
@@ -99,6 +112,27 @@ function sp_render_leaderboard_view() {
             </div>
         </div>
     </div>
+
+    <!-- Location Modal -->
+    <div id="location-modal" style="display:none;">
+        <div id="location-modal-content">
+            <h2>Assign Location</h2>
+            <input type="hidden" id="manager-id-input">
+            <p>
+                <label for="state-select">State</label>
+                <select id="state-select" style="width: 100%;"></select>
+            </p>
+            <p>
+                <label for="city-select">City</label>
+                <select id="city-select" style="width: 100%;"></select>
+            </p>
+            <p>
+                <button class="button button-primary" id="save-location-btn">Save</button>
+                <button class="button" id="cancel-location-btn">Cancel</button>
+            </p>
+        </div>
+    </div>
+
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -120,9 +154,102 @@ function sp_render_leaderboard_view() {
             });
         });
     </script>
+    <script>
+        jQuery(document).ready(function($) {
+            // --- Location Modal Logic ---
+            let statesAndCities = [];
+
+            // Fetch location data
+            $.getJSON('<?php echo plugin_dir_url( __FILE__ ) . '../../assets/data/indian-states-cities.json'; ?>', function(data) {
+                statesAndCities = data.states;
+            });
+
+            $('.change-location-btn').on('click', function() {
+                const managerId = $(this).data('manager-id');
+                $('#manager-id-input').val(managerId);
+                
+                // Populate states
+                const stateSelect = $('#state-select');
+                stateSelect.empty().append('<option value="">Select State</option>');
+                statesAndCities.forEach(state => {
+                    stateSelect.append(`<option value="${state.name}">${state.name}</option>`);
+                });
+
+                $('#location-modal').show();
+            });
+
+            $('#state-select').on('change', function() {
+                const selectedState = $(this).val();
+                const citySelect = $('#city-select');
+                citySelect.empty().append('<option value="">Select City</option>');
+
+                if (selectedState) {
+                    const stateData = statesAndCities.find(state => state.name === selectedState);
+                    if (stateData) {
+                        stateData.cities.forEach(city => {
+                            citySelect.append(`<option value="${city}">${city}</option>`);
+                        });
+                    }
+                }
+            });
+
+            $('#save-location-btn').on('click', function() {
+                const managerId = $('#manager-id-input').val();
+                const state = $('#state-select').val();
+                const city = $('#city-select').val();
+
+                if (!managerId || !state || !city) {
+                    alert('Please select a state and city.');
+                    return;
+                }
+
+                $.ajax({
+                    url: ajaxurl,
+                    type: 'POST',
+                    data: {
+                        action: 'assign_area_manager_location',
+                        manager_id: managerId,
+                        state: state,
+                        city: city,
+                        nonce: '<?php echo wp_create_nonce("assign_location_nonce"); ?>',
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            alert(response.data.message);
+                            location.reload();
+                        } else {
+                            alert('Error: ' + response.data.message);
+                        }
+                    }
+                });
+            });
+
+            $('#cancel-location-btn').on('click', function() {
+                $('#location-modal').hide();
+            });
+        });
+    </script>
     <style>
         .analysis-dashboard { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
         @media (max-width: 782px) { .analysis-dashboard { grid-template-columns: 1fr; } }
+        #location-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        #location-modal-content {
+            background: #fff;
+            padding: 20px;
+            border-radius: 5px;
+            width: 400px;
+        }
     </style>
     <?php
 }

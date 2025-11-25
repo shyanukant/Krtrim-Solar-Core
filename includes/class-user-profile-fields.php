@@ -9,6 +9,24 @@ class SP_User_Profile_Fields {
         add_action( 'edit_user_profile_update', [ $this, 'save_custom_user_profile_fields' ] );
     }
 
+    private function get_location_data() {
+        $locations = [];
+        $file_path = plugin_dir_path( __DIR__ ) . 'assets/data/indian-states-cities.json';
+
+        if (file_exists($file_path)) {
+            $json_data = file_get_contents($file_path);
+            $data = json_decode($json_data, true);
+
+            if (isset($data['states'])) {
+                foreach ($data['states'] as $state) {
+                    $locations[$state['state']] = $state['districts'];
+                }
+            }
+        }
+
+        return $locations;
+    }
+
     public function add_custom_user_profile_fields( $user ) {
         if ( ! in_array( 'area_manager', (array) $user->roles ) ) {
             return;
@@ -17,24 +35,63 @@ class SP_User_Profile_Fields {
         $current_user = wp_get_current_user();
         $can_edit = in_array( 'administrator', (array) $current_user->roles ) || in_array( 'manager', (array) $current_user->roles );
         
-        $state = get_user_meta( $user->ID, 'state', true );
-        $city  = get_user_meta( $user->ID, 'city', true );
+        $selected_state = get_user_meta( $user->ID, 'state', true );
+        $selected_city  = get_user_meta( $user->ID, 'city', true );
+
+        $locations = $this->get_location_data();
         ?>
         <h3><?php _e( 'Location Information', 'krtrim-solar-core' ); ?></h3>
         <table class="form-table">
             <tr>
                 <th><label for="state"><?php _e( 'State', 'krtrim-solar-core' ); ?></label></th>
                 <td>
-                    <input type="text" name="state" id="state" value="<?php echo esc_attr( $state ); ?>" class="regular-text" <?php if ( ! $can_edit ) echo 'disabled'; ?> />
+                    <select name="state" id="sp-state-select" class="regular-text" <?php if ( ! $can_edit ) echo 'disabled'; ?>>
+                        <option value="">Select State</option>
+                        <?php foreach ( $locations as $state => $cities ) : ?>
+                            <option value="<?php echo esc_attr( $state ); ?>" <?php selected( $selected_state, $state ); ?>><?php echo esc_html( $state ); ?></option>
+                        <?php endforeach; ?>
+                    </select>
                 </td>
             </tr>
             <tr>
                 <th><label for="city"><?php _e( 'City', 'krtrim-solar-core' ); ?></label></th>
                 <td>
-                    <input type="text" name="city" id="city" value="<?php echo esc_attr( $city ); ?>" class="regular-text" <?php if ( ! $can_edit ) echo 'disabled'; ?> />
+                    <select name="city" id="sp-city-select" class="regular-text" <?php if ( ! $can_edit ) echo 'disabled'; ?>>
+                        <option value="">Select City</option>
+                    </select>
                 </td>
             </tr>
         </table>
+        <script>
+            jQuery(document).ready(function($) {
+                var locations = <?php echo json_encode($locations); ?>;
+                var selectedCity = '<?php echo esc_js($selected_city); ?>';
+
+                function updateCities() {
+                    var state = $('#sp-state-select').val();
+                    var cityDropdown = $('#sp-city-select');
+                    cityDropdown.empty().append('<option value="">Select City</option>');
+
+                    if (locations[state]) {
+                        $.each(locations[state], function(index, city) {
+                            var option = $('<option></option>').attr('value', city).text(city);
+                            if (city === selectedCity) {
+                                option.attr('selected', 'selected');
+                            }
+                            cityDropdown.append(option);
+                        });
+                    }
+                }
+
+                if ($('#sp-state-select').length) {
+                    updateCities();
+                    $('#sp-state-select').on('change', function() {
+                        selectedCity = ''; // Reset city on state change
+                        updateCities();
+                    });
+                }
+            });
+        </script>
         <?php
     }
 

@@ -14,15 +14,13 @@ function sp_area_manager_dashboard_shortcode() {
         return '<div class="notice notice-error"><p>Access Denied. This page is for Area Managers only.</p></div>';
     }
 
-    // Enqueue styles and scripts
-    wp_enqueue_style('unified-dashboard-styles');
-    wp_enqueue_script('unified-dashboard-scripts');
-    wp_localize_script('unified-dashboard-scripts', 'sp_area_dashboard_vars', [
+    wp_enqueue_script('area-manager-dashboard', plugin_dir_url(__FILE__) . '../../assets/js/area-manager-dashboard.js', ['jquery'], null, true);
+    wp_localize_script('area-manager-dashboard', 'sp_area_dashboard_vars', [
         'ajax_url' => admin_url('admin-ajax.php'),
-        'create_project_nonce' => wp_create_nonce('sp_create_project_nonce'),
+        'create_project_nonce' => wp_create_nonce('sp_create_project_nonce_field'),
         'project_details_nonce' => wp_create_nonce('sp_project_details_nonce'),
-        'review_submission_nonce' => wp_create_nonce('sp_review_nonce'), // Reuse existing nonce
-        'award_bid_nonce' => wp_create_nonce('award_bid_nonce'), // Reuse existing nonce
+        'review_submission_nonce' => wp_create_nonce('sp_review_nonce'),
+        'award_bid_nonce' => wp_create_nonce('award_bid_nonce'),
     ]);
     
     $user = wp_get_current_user();
