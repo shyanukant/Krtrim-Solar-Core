@@ -118,6 +118,45 @@ if (typeof jQuery === 'undefined') {
             console.log('=== NAV CLICK COMPLETE ===');
         });
 
+        // --- Toast Notification Helper ---
+        function showToast(message, type = 'info') {
+            const toastContainer = $('#toast-container');
+            const toastId = 'toast-' + Date.now();
+
+            const toast = $(`
+                <div class="toast ${type}" id="${toastId}">
+                    <div class="toast-icon"></div>
+                    <div class="toast-message">${message}</div>
+                    <button class="toast-close">×</button>
+                </div>
+            `);
+
+            toastContainer.append(toast);
+
+            // Close button click
+            toast.find('.toast-close').on('click', function () {
+                removeToast(toastId);
+            });
+
+            // Auto remove after 3 seconds
+            setTimeout(() => {
+                removeToast(toastId);
+            }, 3000);
+        }
+
+        function removeToast(toastId) {
+            const toast = $('#' + toastId);
+            if (toast.length) {
+                toast.addClass('removing');
+                setTimeout(() => {
+                    toast.remove();
+                }, 300);
+            }
+        }
+
+        // Make showToast globally available
+        window.showToast = showToast;
+
         const ajaxUrl = (typeof sp_area_dashboard_vars !== 'undefined') ? sp_area_dashboard_vars.ajax_url : '';
 
         if (!ajaxUrl) {
@@ -383,7 +422,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                         setTimeout(() => {
                             $('.nav-item[data-section="projects"]').click();
@@ -465,7 +504,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                         loadLeads();
                     } else {
@@ -493,7 +532,7 @@ if (typeof jQuery === 'undefined') {
                     if (response.success) {
                         loadLeads();
                     } else {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                     }
                 }
             });
@@ -542,7 +581,7 @@ if (typeof jQuery === 'undefined') {
                             window.open(response.data.whatsapp_url, '_blank');
                             feedback.text('WhatsApp opened.').addClass('text-success');
                         } else {
-                            feedback.text(response.data.message).addClass('text-success');
+                            showToast(response.data.message, 'success');
                         }
                         setTimeout(() => { $('#message-modal').hide(); form[0].reset(); feedback.text(''); }, 2000);
                     } else {
@@ -602,7 +641,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                     } else {
                         feedback.text(response.data.message).addClass('text-danger');
@@ -722,10 +761,10 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                         loadProjectDetails(button.closest('.project-detail-card').find('.award-bid-btn').data('project-id'));
                     } else {
-                        alert('Error: ' + response.data.message);
+                        showToast('Error: ' + response.data.message, 'error');
                     }
                 },
                 complete: function () {
@@ -760,10 +799,10 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                         loadProjectDetails(projectId);
                     } else {
-                        alert('Error: ' + response.data.message);
+                        showToast('Error: ' + response.data.message, 'error');
                     }
                 },
                 complete: function () {
@@ -840,7 +879,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         setTimeout(() => { $('#reset-password-modal').hide(); form[0].reset(); feedback.text(''); }, 2000);
                     } else {
                         feedback.text(response.data.message).addClass('text-danger');
@@ -1201,7 +1240,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                         setTimeout(() => {
                             $('.nav-item[data-section="projects"]').click();
@@ -1283,7 +1322,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                         loadLeads();
                     } else {
@@ -1311,7 +1350,7 @@ if (typeof jQuery === 'undefined') {
                     if (response.success) {
                         loadLeads();
                     } else {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                     }
                 }
             });
@@ -1360,7 +1399,7 @@ if (typeof jQuery === 'undefined') {
                             window.open(response.data.whatsapp_url, '_blank');
                             feedback.text('WhatsApp opened.').addClass('text-success');
                         } else {
-                            feedback.text(response.data.message).addClass('text-success');
+                            showToast(response.data.message, 'success');
                         }
                         setTimeout(() => { $('#message-modal').hide(); form[0].reset(); feedback.text(''); }, 2000);
                     } else {
@@ -1420,7 +1459,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         form[0].reset();
                     } else {
                         feedback.text(response.data.message).addClass('text-danger');
@@ -1540,10 +1579,10 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                         loadProjectDetails(button.closest('.project-detail-card').find('.award-bid-btn').data('project-id'));
                     } else {
-                        alert('Error: ' + response.data.message);
+                        showToast('Error: ' + response.data.message, 'error');
                     }
                 },
                 complete: function () {
@@ -1578,10 +1617,10 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        alert(response.data.message);
+                        showToast(response.data.message, 'error');
                         loadProjectDetails(projectId);
                     } else {
-                        alert('Error: ' + response.data.message);
+                        showToast('Error: ' + response.data.message, 'error');
                     }
                 },
                 complete: function () {
@@ -1658,7 +1697,7 @@ if (typeof jQuery === 'undefined') {
                 },
                 success: function (response) {
                     if (response.success) {
-                        feedback.text(response.data.message).addClass('text-success');
+                        showToast(response.data.message, 'success');
                         setTimeout(() => { $('#reset-password-modal').hide(); form[0].reset(); feedback.text(''); }, 2000);
                     } else {
                         feedback.text(response.data.message).addClass('text-danger');

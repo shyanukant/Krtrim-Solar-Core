@@ -45,6 +45,7 @@ class SP_API_Handlers {
 
         // Client Management
         add_action('wp_ajax_get_area_manager_clients', [ $this, 'get_area_manager_clients' ]);
+        add_action('wp_ajax_create_client_from_dashboard', [ $this, 'create_client_from_dashboard' ]);
         add_action('wp_ajax_reset_client_password', [ $this, 'reset_client_password' ]);
     }
 

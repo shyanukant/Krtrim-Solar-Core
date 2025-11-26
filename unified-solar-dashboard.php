@@ -3,7 +3,7 @@
  * Plugin Name:       Krtrim Solar Core
  * Plugin URI:        https://krtrim.tech/tool
  * Description:       A comprehensive project management and bidding platform for solar companies, developed by Krtrim.
- * Version:           2.0.1
+ * Version:           1.0.0
  * Author:            Krtrim
  * Author URI:        https://krtrim.tech
  * License:           GPL-2.0+
@@ -23,7 +23,7 @@ if ( ! defined( 'WPINC' ) ) {
 final class Krtrim_Solar_Core {
 
 	private static $instance = null;
-	public $version = '2.0.1';
+	public $version = '1.0.0';
 	public $file = __FILE__;
 	public $dir_path;
 	public $dir_url;
@@ -174,6 +174,8 @@ final class Krtrim_Solar_Core {
 
 		global $post;
 		if ( is_a( $post, 'WP_Post' ) && ( has_shortcode( $post->post_content, 'area_manager_dashboard' ) || is_page( 'area-manager-dashboard' ) ) ) {
+            wp_enqueue_style('toast-css', $this->dir_url . 'assets/css/toast.css', [], '1.0.0');
+            wp_enqueue_style('password-field-css', $this->dir_url . 'assets/css/password-field.css', [], '1.0.0');
             wp_enqueue_script( 'chart-js', 'https://cdn.jsdelivr.net/npm/chart.js', [], '3.7.0', true );
 			wp_enqueue_script('area-manager-dashboard', $this->dir_url . 'assets/js/area-manager-dashboard.js', ['jquery', 'chart-js'], '1.0.1', true);
 			wp_localize_script('area-manager-dashboard', 'sp_area_dashboard_vars', [
@@ -324,7 +326,12 @@ function sp_create_plugin_essentials() {
 		],
 		'area_manager' => [
 			'display_name' => 'Area Manager',
-			'capabilities' => [ 'read' => true ],
+			'capabilities' => [
+				'read'         => true,
+				'edit_posts'   => true,
+				'delete_posts' => true,
+				'create_users' => true,  // Required to create client users
+			],
 		],
 		'solar_vendor' => [
 			'display_name' => 'Solar Vendor',

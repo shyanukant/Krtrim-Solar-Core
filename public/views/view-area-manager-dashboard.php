@@ -70,6 +70,12 @@ function sp_area_manager_dashboard_shortcode() {
         <div class="dashboard-main">
             <header class="dashboard-header-top">
                 <h1 id="section-title">Dashboard</h1>
+                <div class="header-right">
+                    <button class="notification-badge" id="notification-toggle" title="Notifications">
+                        🔔
+                        <span class="badge-count" id="notification-count" style="display:none;">0</span>
+                    </button>
+                </div>
             </header>
             <main class="dashboard-content">
                 <!-- Dashboard Section -->
@@ -400,10 +406,10 @@ function sp_area_manager_dashboard_shortcode() {
                             </div>
                             <div class="form-group">
                                 <label for="client_password">Password</label>
-                                <div style="position: relative;">
-                                    <input type="password" id="client_password" name="client_password" required style="width: 100%; padding-right: 80px;">
-                                    <span class="toggle-password" data-target="client_password" style="position: absolute; right: 40px; top: 50%; transform: translateY(-50%); cursor: pointer; z-index: 2;">👁️</span>
-                                    <button type="button" class="generate-password-btn" data-target="client_password" style="position: absolute; right: 5px; top: 50%; transform: translateY(-50%); border: none; background: none; cursor: pointer; z-index: 2;" title="Generate Password">🎲</button>
+                                <div style="position: relative; display: flex; align-items: stretch; gap: 5px;">
+                                    <input type="password" id="client_password" name="client_password" required style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
+                                    <button type="button" class="toggle-password" data-target="client_password" style="padding: 10px 15px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; border-radius: 6px; font-size: 18px; transition: all 0.2s;" title="Toggle Password Visibility">👁️</button>
+                                    <button type="button" class="generate-password-btn" data-target="client_password" style="padding: 10px 15px; border: 1px solid #ddd; background: #f8f9fa; cursor: pointer; border-radius: 6px; font-size: 18px; transition: all 0.2s;" title="Generate Password">🎲</button>
                                 </div>
                                 <div id="password-strength-meter" style="height: 5px; background: #eee; margin-top: 5px; width: 100%; border-radius: 3px;">
                                     <div id="password-strength-bar" style="height: 100%; width: 0%; background: red; transition: width 0.3s, background 0.3s; border-radius: 3px;"></div>
@@ -418,6 +424,21 @@ function sp_area_manager_dashboard_shortcode() {
             </main>
         </div>
     </div>
+
+    <!-- Notification Panel -->
+    <div class="notification-panel" id="notification-panel">
+        <div class="notification-header">
+            <h3>Notifications</h3>
+            <button class="close-btn" id="close-notification-panel">×</button>
+        </div>
+        <div class="notification-list" id="notification-list">
+            <p style="text-align: center; color: #999; padding: 20px;">Loading notifications...</p>
+        </div>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container" id="toast-container"></div>
+
     <?php
     return ob_get_clean();
 }
