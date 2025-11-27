@@ -43,6 +43,22 @@ jQuery(document).ready(function ($) {
         }
     });
 
+    // Check for URL parameters and auto-select filters
+    const urlParams = new URLSearchParams(window.location.search);
+    const filterState = urlParams.get('filter_state');
+    const filterCity = urlParams.get('filter_city');
+
+    if (filterState) {
+        stateSelect.val(filterState).trigger('change');
+    }
+
+    if (filterCity && filterState) {
+        // Wait a bit for cities to load, then select the city
+        setTimeout(function () {
+            citySelect.val(filterCity);
+        }, 100);
+    }
+
     // Handle Filter Button Click
     $('#apply-filters-btn').on('click', function (e) {
         e.preventDefault();

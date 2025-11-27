@@ -24,6 +24,17 @@ get_header(); ?>
         $assignment_method = get_post_meta($project_id, '_vendor_assignment_method', true);
 
         ?>
+        <!-- Back to Marketplace Button -->
+        <div class="project-breadcrumb" style="margin-bottom: 30px;">
+            <a href="<?php echo home_url('/project-marketplace/'); ?>" class="back-to-marketplace" style="display: inline-flex; align-items: center; gap: 8px; color: #667eea; text-decoration: none; font-weight: 600; padding: 10px 20px; background: #f7fafc; border-radius: 8px; transition: all 0.3s ease;">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="19" y1="12" x2="5" y2="12"></line>
+                    <polyline points="12 19 5 12 12 5"></polyline>
+                </svg>
+                Back to Marketplace
+            </a>
+        </div>
+        
         <article id="post-<?php the_ID(); ?>" <?php post_class('solar-project-single'); ?>>
             <header class="entry-header">
                 <?php the_title( '<h1 class="entry-title">', '</h1>' ); ?>
@@ -139,6 +150,123 @@ get_header(); ?>
                     <?php endif; ?>
                 </div>
                 </section>
+
+                <!-- Related Projects Section -->
+                <?php
+                // Query for related projects from same location
+                $related_args = [
+                    'post_type' => 'solar_project',
+                    'post_status' => 'publish',
+                    'posts_per_page' => 3,
+                    'post__not_in' => [$project_id],
+                    'meta_query' => [
+                        'relation' => 'AND',
+                        [
+                            'key' => '_vendor_assignment_method',
+                            'value' => 'bidding',
+                            'compare' => '='
+                        ],
+                        [
+                            'key' => '_project_city',
+                            'value' => $project_city,
+                            'compare' => '='
+                        ]
+                    ]
+                ];
+                
+                $related_query = new WP_Query($related_args);
+                
+                if ($related_query->have_posts()): ?>
+                <section class="related-projects-section" style="margin-top: 60px; padding-top: 40px; border-top: 2px solid #e2e8f0;">
+                    <div class="related-header" style="margin-bottom: 30px;">
+                        <h2 style="font-size: 28px; font-weight: 700; color: #1a202c; margin: 0 0 10px 0;">
+                            More Projects in <?php echo esc_html($project_city); ?>
+                        </h2>
+                        <p style="color: #718096; margin: 0;">Explore other solar projects available for bidding in this location</p>
+                    </div>
+                    
+                    <div class="related-projects-grid" style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; margin-bottom: 30px;">
+                        <?php while ($related_query->have_posts()): $related_query->the_post();
+                            $rel_id = get_the_ID();
+                            $rel_state = get_post_meta($rel_id, '_project_state', true);
+                            $rel_city = get_post_meta($rel_id, '_project_city', true);
+                            $rel_size = get_post_meta($rel_id, '_solar_system_size_kw', true);
+                            $rel_location = trim($rel_city . ', ' . $rel_state, ', ');
+                            
+                            $rel_thumbnail = get_the_post_thumbnail_url($rel_id, 'medium');
+                            if (!$rel_thumbnail) {
+                                $default_image = get_option('ksc_default_project_image', '');
+                                $rel_thumbnail = $default_image ?: 'https://via.placeholder.com/400x250/667eea/ffffff?text=Solar+Project';
+                            }
+                        ?>
+                        <div class="project-card">
+                            <div class="project-card-image">
+                                <img src="<?php echo esc_url($rel_thumbnail); ?>" alt="<?php echo esc_attr(get_the_title()); ?>">
+                                <div class="project-card-badge">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <circle cx="12" cy="12" r="5"></circle>
+                                        <line x1="12" y1="1" x2="12" y2="3"></line>
+                                        <line x1="12" y1="21" x2="12" y2="23"></line>
+                                        <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line>
+                                        <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line>
+                                        <line x1="1" y1="12" x2="3" y2="12"></line>
+                                        <line x1="21" y1="12" x2="23" y2="12"></line>
+                                        <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line>
+                                        <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line>
+                                    </svg>
+                                    Open for Bids
+                                </div>
+                            </div>
+                            <div class="project-card-content">
+                                <h3 class="project-card-title"><?php echo esc_html(get_the_title()); ?></h3>
+                                
+                                <div class="project-card-details">
+                                    <div class="project-detail-item">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+                                            <circle cx="12" cy="10" r="3"></circle>
+                                        </svg>
+                                        <span><?php echo esc_html($rel_location ?: 'Location not specified'); ?></span>
+                                    </div>
+                                    
+                                    <?php if ($rel_size): ?>
+                                    <div class="project-detail-item">
+                                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                            <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                            <line x1="9" y1="9" x2="15" y2="15"></line>
+                                            <line x1="15" y1="9" x2="9" y2="15"></line>
+                                        </svg>
+                                        <span><?php echo esc_html($rel_size); ?> kW System</span>
+                                    </div>
+                                    <?php endif; ?>
+                                </div>
+                                
+                                <a href="<?php echo esc_url(get_permalink()); ?>" class="project-card-btn">
+                                    View Details & Bid
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                                        <polyline points="12 5 19 12 12 19"></polyline>
+                                    </svg>
+                                </a>
+                            </div>
+                        </div>
+                        <?php endwhile; wp_reset_postdata(); ?>
+                    </div>
+                    
+                    <!-- See More Button -->
+                    <div style="text-align: center;">
+                        <a href="<?php echo home_url('/project-marketplace/?filter_city=' . urlencode($project_city) . '&filter_state=' . urlencode($project_state)); ?>" 
+                           class="see-more-btn" 
+                           style="display: inline-flex; align-items: center; gap: 10px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 14px 32px; border-radius: 10px; text-decoration: none; font-weight: 600; font-size: 16px; transition: all 0.3s ease;">
+                            See All Projects in <?php echo esc_html($project_city); ?>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="5" y1="12" x2="19" y2="12"></line>
+                                <polyline points="12 5 19 12 12 19"></polyline>
+                            </svg>
+                        </a>
+                    </div>
+                </section>
+                <?php endif; ?>
 
             </div><!-- .entry-content -->
         </article><!-- #post-<?php the_ID(); ?> -->
