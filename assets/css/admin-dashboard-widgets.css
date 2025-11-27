@@ -1,0 +1,502 @@
+/**
+ * Admin Dashboard Widget Styles
+ * Modern, beautiful, animated design
+ */
+
+/* === Base Widget Styling === */
+#sp_business_overview .inside,
+#sp_financial_summary .inside,
+#sp_area_manager_performance .inside,
+#sp_recent_activity .inside,
+#sp_quick_stats .inside {
+    margin: 0 !important;
+    padding: 0 !important;
+}
+
+.sp-widget-content {
+    padding: 20px;
+    background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 20%, #f5f7fa 100%);
+    border-radius: 8px;
+}
+
+.sp-widget-footer {
+    padding: 15px 20px;
+    background: #ffffff;
+    border-top: 1px solid #e2e8f0;
+    margin-top: 0;
+}
+
+.sp-view-all {
+    color: #667eea;
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 14px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.sp-view-all:hover {
+    color: #764ba2;
+    transform: translateX(4px);
+}
+
+.sp-view-all::after {
+    content: '→';
+    transition: transform 0.3s ease;
+}
+
+.sp-view-all:hover::after {
+    transform: translateX(4px);
+}
+
+/* === Business Overview - Stats Grid === */
+.sp-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.sp-stat-box {
+    background: white;
+    border-radius: 12px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    position: relative;
+    overflow: hidden;
+}
+
+.sp-stat-box::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    transition: transform 0.3s ease;
+    transform: scaleX(0);
+    transform-origin: left;
+}
+
+.sp-stat-box:hover::before {
+    transform: scaleX(1);
+}
+
+.sp-stat-box:hover {
+    transform: translateY(-6px) scale(1.03);
+    box-shadow: 0 12px 24px rgba(0, 0, 0, 0.15);
+}
+
+.sp-stat-box.sp-primary::before {
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+}
+
+.sp-stat-box.sp-success::before {
+    background: linear-gradient(90deg, #56ab2f 0%, #a8e063 100%);
+}
+
+.sp-stat-box.sp-warning::before {
+    background: linear-gradient(90deg, #f093fb 0%, #f5576c 100%);
+}
+
+.sp-stat-box.sp-info::before {
+    background: linear-gradient(90deg, #4facfe 0%, #00f2fe 100%);
+}
+
+.sp-stat-icon {
+    font-size: 42px;
+    animation: bounce 2s infinite;
+    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.1));
+}
+
+@keyframes bounce {
+
+    0%,
+    100% {
+        transform: translateY(0);
+    }
+
+    50% {
+        transform: translateY(-5px);
+    }
+}
+
+.sp-stat-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sp-stat-label {
+    font-size: 12px;
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sp-stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+}
+
+/* === Financial Summary === */
+.sp-financial-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 24px;
+}
+
+.sp-financial-item {
+    background: white;
+    padding: 18px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+    transition: all 0.3s ease;
+    border-left: 4px solid #cbd5e0;
+}
+
+.sp-financial-item:hover {
+    transform: translateX(4px);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
+}
+
+.sp-financial-item.sp-revenue {
+    border-left-color: #667eea;
+}
+
+.sp-financial-item.sp-costs {
+    border-left-color: #f5576c;
+}
+
+.sp-financial-item.sp-profit {
+    border-left-color: #56ab2f;
+    background: linear-gradient(135deg, #f5f7fa 0%, #e3f9e5 100%);
+}
+
+.sp-financial-item.sp-margin {
+    border-left-color: #4facfe;
+}
+
+.sp-financial-label {
+    display: block;
+    font-size: 13px;
+    color: #4a5568;
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.sp-financial-value {
+    display: block;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1a202c;
+}
+
+.sp-financial-value.sp-highlight {
+    background: linear-gradient(135deg, #56ab2f 0%, #a8e063 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-size: 28px;
+}
+
+.sp-trend-chart {
+    background: white;
+    padding: 20px;
+    border-radius: 10px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+/* === Area Manager Performance === */
+.sp-performance-table {
+    width: 100%;
+    border-collapse: separate;
+    border-spacing: 0;
+    background: white;
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.sp-performance-table thead {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+}
+
+.sp-performance-table th {
+    padding: 14px 16px;
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    color: white;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sp-performance-table tbody tr {
+    transition: all 0.3s ease;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.sp-performance-table tbody tr:hover {
+    background: linear-gradient(90deg, #f5f7fa 0%, #edf2f7 100%);
+    transform: scale(1.01);
+}
+
+.sp-performance-table tbody tr:last-child {
+    border-bottom: none;
+}
+
+.sp-performance-table td {
+    padding: 14px 16px;
+    color: #4a5568;
+    font-size: 14px;
+}
+
+.sp-manager-name {
+    font-weight: 600;
+    color: #1a202c;
+}
+
+.sp-profit-cell {
+    font-weight: 700;
+    color: #56ab2f;
+}
+
+.sp-no-data {
+    text-align: center;
+    padding: 40px 20px;
+    color: #a0aec0;
+    font-style: italic;
+}
+
+/* === Recent Activity === */
+.sp-activity-feed {
+    background: white;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+}
+
+.sp-activity-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    padding: 14px;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #f7fafc;
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+.sp-activity-item:hover {
+    background: linear-gradient(90deg, #edf2f7 0%, #e6fffa 100%);
+    transform: translateX(6px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.sp-activity-item:last-child {
+    margin-bottom: 0;
+}
+
+.sp-activity-icon {
+    font-size: 24px;
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+
+    0%,
+    100% {
+        transform: scale(1);
+    }
+
+    50% {
+        transform: scale(1.1);
+    }
+}
+
+.sp-activity-details {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.sp-activity-text {
+    font-size: 14px;
+    color: #2d3748;
+    font-weight: 500;
+}
+
+.sp-activity-time {
+    font-size: 12px;
+    color: #a0aec0;
+}
+
+/* === Quick Stats === */
+.sp-quick-stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+    gap: 14px;
+    margin-bottom: 16px;
+}
+
+.sp-quick-stat {
+    background: white;
+    padding: 24px 18px;
+    border-radius: 12px;
+    text-align: center;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    position: relative;
+    overflow: hidden;
+}
+
+.sp-quick-stat::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+    transform: scaleX(0);
+    transition: transform 0.3s ease;
+}
+
+.sp-quick-stat:hover::before {
+    transform: scaleX(1);
+}
+
+.sp-quick-stat:hover {
+    transform: translateY(-8px) rotate(2deg);
+    box-shadow: 0 12px 28px rgba(102, 126, 234, 0.25);
+}
+
+.sp-quick-stat.sp-attention {
+    border: 2px solid #f5576c;
+}
+
+.sp-quick-stat.sp-attention::before {
+    background: linear-gradient(90deg, #f5576c 0%, #f093fb 100%);
+}
+
+.sp-quick-stat.sp-attention .sp-quick-stat-number {
+    color: #f5576c;
+    animation: pulse-attention 1.5s infinite;
+}
+
+@keyframes pulse-attention {
+
+    0%,
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+
+    50% {
+        transform: scale(1.1);
+        opacity: 0.8;
+    }
+}
+
+.sp-quick-stat-number {
+    font-size: 42px;
+    font-weight: 800;
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    line-height: 1;
+    margin-bottom: 10px;
+    animation: count-up 0.8s ease-out;
+}
+
+@keyframes count-up {
+    from {
+        opacity: 0;
+        transform: translateY(-20px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.sp-quick-stat-label {
+    font-size: 12px;
+    color: #718096;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.sp-widget-footer.sp-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+
+.sp-widget-footer.sp-actions .button {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    border: none;
+    transition: all 0.3s ease;
+}
+
+.sp-widget-footer.sp-actions .button:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+/* === Responsive Design === */
+@media (max-width: 782px) {
+
+    .sp-stats-grid,
+    .sp-financial-grid,
+    .sp-quick-stats-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .sp-performance-table {
+        font-size: 12px;
+    }
+
+    .sp-performance-table th,
+    .sp-performance-table td {
+        padding: 10px 8px;
+    }
+}
+
+/* === Loading Animation === */
+.sp-loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid rgba(102, 126, 234, 0.3);
+    border-radius: 50%;
+    border-top-color: #667eea;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}

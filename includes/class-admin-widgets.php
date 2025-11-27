@@ -14,7 +14,108 @@ class SP_Admin_Widgets {
 
     public function __construct() {
         add_action('wp_dashboard_setup', [$this, 'register_widgets']);
+        add_action('admin_enqueue_scripts', [$this, 'enqueue_admin_scripts']);
     }
+
+    /**
+     * Enqueue scripts and styles for admin dashboard
+     */
+    public function enqueue_admin_scripts($hook) {
+        // Only load on dashboard
+        if ('index.php' !== $hook) {
+            return;
+        }
+
+        // Enqueue Chart.js from CDN
+        wp_enqueue_script('chartjs', 'https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js', [], '3.9.1', true);
+        
+        // Enqueue custom dashboard CSS
+        wp_enqueue_style('sp-admin-widgets', plugin_dir_url(dirname(__FILE__)) . 'assets/css/admin-dashboard-widgets.css', [], '1.0.0');
+        
+        // Enqueue custom dashboard JS
+        wp_add_inline_script('chartjs', $this->get_chart_js_code());
+    }
+
+    /**
+     * Get JavaScript code for charts
+     */
+    private function get_chart_js_code() {
+        $stats = $this->get_financial_stats();
+        
+        // Get last 6 months revenue data
+        $revenue_data = $this->get_revenue_trend_data();
+        
+        return "
+        jQuery(document).ready(function($) {
+            // Financial Trend Chart
+            var ctx = document.getElementById('spRevenueTrendCanvas');
+            if (ctx) {
+                ctx = ctx.getContext('2d');
+                new Chart(ctx, {
+                    type: 'line',
+                    data: {
+                        labels: " . json_encode($revenue_data['labels']) . ",
+                        datasets: [{
+                            label: 'Revenue (₹)',
+                            data: " . json_encode($revenue_data['values']) . ",
+                            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                            borderColor: '#667eea',
+                            borderWidth: 3,
+                            fill: true,
+                            tension: 0.4,
+                            pointBackgroundColor: '#667eea',
+                            pointBorderColor: 'white',
+                            pointBorderWidth: 2,
+                            pointRadius: 5,
+                            pointHoverRadius: 7
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            },
+                            title: {
+                                display: true,
+                                text: 'Revenue Trend (Last 6 Months)',
+                                font: {
+                                    size: 14,
+                                    weight: '600'
+                                },
+                                color: '#2d3748'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                grid: {
+                                    color: 'rgba(0, 0, 0, 0.05)'
+                                },
+                                ticks: {
+                                    callback: function(value) {
+                                        return '₹' + value.toLocaleString();
+                                    },
+                                    color: '#718096'
+                                }
+                            },
+                            x: {
+                                grid: {
+                                    display: false
+                                },
+                                ticks: {
+                                    color: '#718096'
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+        });
+        ";
+    }
+
 
     public function register_widgets() {
         // Only show to administrators
@@ -426,5 +527,38 @@ class SP_Admin_Widgets {
             'fields' => 'ids'
         ]);
         return count($count);
+    }
+
+    /**
+     * Get revenue trend data for last 6 months
+     */
+    private function get_revenue_trend_data() {
+        global $wpdb;
+        
+        $labels = [];
+        $values = [];
+        
+        // Get last 6 months
+        for ($i = 5; $i >= 0; $i--) {
+            $date = date('Y-m', strtotime("-$i months"));
+            $month_name = date('M', strtotime("-$i months"));
+            
+            $revenue = $wpdb->get_var($wpdb->prepare("
+                SELECT SUM(pm.meta_value) 
+                FROM {$wpdb->postmeta} pm
+                INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+                WHERE pm.meta_key = '_total_project_cost'
+                AND DATE_FORMAT(p.post_date, '%%Y-%%m') = %s
+                AND p.post_type = 'solar_project'
+            ", $date));
+            
+            $labels[] = $month_name;
+            $values[] = floatval($revenue);
+        }
+        
+        return [
+            'labels' => $labels,
+            'values' => $values
+        ];
     }
 }
