@@ -29,7 +29,43 @@ function sp_get_project_details() {
         return;
     }
     
+    
     // Get project meta
+    $client_user_id = get_post_meta($project_id, '_client_user_id', true);
+    
+    // Initialize client data
+    $client_name = 'N/A';
+    $client_email = 'N/A';
+    $client_phone = get_post_meta($project_id, '_client_phone_number', true) ?: 'N/A';
+    $client_address = get_post_meta($project_id, '_client_address', true) ?: 'N/A';
+    
+    // Get client details from WordPress user if available
+    if ($client_user_id) {
+        $client_user = get_userdata($client_user_id);
+        if ($client_user) {
+            // Try to get first name from user meta first
+            $first_name = get_user_meta($client_user_id, 'first_name', true);
+            $last_name = get_user_meta($client_user_id, 'last_name', true);
+            
+            if ($first_name) {
+                $client_name = $first_name . ($last_name ? ' ' . $last_name : '');
+            } else {
+                // Fallback to display name or username
+                $client_name = $client_user->display_name ?: $client_user->user_login;
+            }
+            
+            $client_email = $client_user->user_email;
+            
+            // Try to get phone from user meta if not in project meta
+            if ($client_phone === 'N/A') {
+                $user_phone = get_user_meta($client_user_id, 'phone', true);
+                if ($user_phone) {
+                    $client_phone = $user_phone;
+                }
+            }
+        }
+    }
+    
     $data = [
         'id' => $project_id,
         'title' => get_the_title($project_id),
@@ -39,12 +75,13 @@ function sp_get_project_details() {
         'solar_system_size_kw' => get_post_meta($project_id, '_solar_system_size_kw', true),
         'total_cost' => get_post_meta($project_id, '_total_project_cost', true),
         'start_date' => get_post_meta($project_id, '_project_start_date', true),
-        'client_name' => get_post_meta($project_id, '_client_name', true),
-        'client_phone_number' => get_post_meta($project_id, '_client_phone_number', true),
-        'client_address' => get_post_meta($project_id, '_client_address', true),
-        'vendor_name' => get_post_meta($project_id, '_vendor_name', true),
-        'vendor_paid_amount' => get_post_meta($project_id, '_paid_to_vendor', true),
-        'company_profit' => get_post_meta($project_id, '_company_profit', true),
+        'client_name' => $client_name,
+        'client_email' => $client_email,
+        'client_phone_number' => $client_phone,
+        'client_address' => $client_address,
+        'vendor_name' => get_post_meta($project_id, '_vendor_name', true) ?: 'Not assigned',
+        'vendor_paid_amount' => get_post_meta($project_id, '_paid_to_vendor', true) ?: '0',
+        'company_profit' => get_post_meta($project_id, '_company_profit', true) ?: '0',
         'steps' => []
     ];
     

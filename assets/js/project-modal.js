@@ -91,14 +91,23 @@
         $('#projectDetailModal').removeClass('active');
     }
 
-    // Close modal button
-    $(document).on('click', '.modal-close', function () {
+    // Close modal button - multiple selectors for compatibility
+    $(document).on('click', '.modal-close, .project-modal .modal-close, button.modal-close', function (e) {
+        e.preventDefault();
+        console.log('Close button clicked');
         closeProjectModal();
     });
 
     // Close modal on background click
-    $(document).on('click', '#projectDetailModal', function (e) {
-        if (e.target.id === 'projectDetailModal') {
+    $(document).on('click', '#projectDetailModal, .project-modal', function (e) {
+        if (e.target.id === 'projectDetailModal' || $(e.target).hasClass('project-modal')) {
+            closeProjectModal();
+        }
+    });
+
+    // Close on Escape key
+    $(document).on('keydown', function (e) {
+        if (e.key === 'Escape' && $('#projectDetailModal').hasClass('active')) {
             closeProjectModal();
         }
     });

@@ -36,11 +36,6 @@ function sp_project_marketplace_shortcode() {
                 </select>
             </div>
 
-            <div class="filter-group">
-                <label for="budget-filter">Max Budget (₹)</label>
-                <input type="number" id="budget-filter" name="budget-filter" placeholder="e.g., 500000">
-            </div>
-
             <button id="apply-filters-btn" class="btn btn-primary">Apply Filters</button>
         </div>
 

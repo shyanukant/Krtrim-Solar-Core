@@ -525,81 +525,92 @@ class SP_API_Handlers {
     }
 
     public function filter_marketplace_projects() {
-        check_ajax_referer('filter_projects_nonce', 'nonce');
-
-        $state = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
-        $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
-        $budget = isset($_POST['budget']) ? floatval($_POST['budget']) : 0;
-
-        $args = [
-            'post_type' => 'solar_project',
-            'posts_per_page' => -1,
-            'meta_query' => ['relation' => 'AND'],
-            'tax_query' => ['relation' => 'AND'],
-        ];
-
-        if (!empty($state)) {
-            $args['meta_query'][] = [
-                'key' => 'project_state',
-                'value' => $state,
-                'compare' => '=',
-            ];
+        // Clean any previous output
+        if (ob_get_length()) {
+            ob_clean();
         }
+        
+        try {
+            error_log('Marketplace filter called with data: ' . print_r($_POST, true));
+            
+            $state = isset($_POST['state']) ? sanitize_text_field($_POST['state']) : '';
+            $city = isset($_POST['city']) ? sanitize_text_field($_POST['city']) : '';
 
-        if (!empty($city)) {
-            $args['tax_query'][] = [
-                'taxonomy' => 'project_city',
-                'field' => 'name',
-                'terms' => $city,
+            $args = [
+                'post_type' => 'solar_project',
+                'post_status' => 'publish',
+                'posts_per_page' => -1,
+                'meta_query' => [
+                    'relation' => 'AND',
+                    [
+                        'key' => '_vendor_assignment_method',
+                        'value' => 'bidding',
+                        'compare' => '='
+                    ]
+                ]
             ];
-        }
 
-        if (!empty($budget)) {
-            $args['meta_query'][] = [
-                'key' => 'total_project_cost',
-                'value' => $budget,
-                'type' => 'NUMERIC',
-                'compare' => '<=',
-            ];
-        }
-
-        $projects_query = new WP_Query($args);
-        $projects_data = [];
-
-        if ($projects_query->have_posts()) {
-            while ($projects_query->have_posts()) {
-                $projects_query->the_post();
-                $project_id = get_the_ID();
-                
-                $state = get_post_meta($project_id, 'project_state', true);
-                $city_terms = get_the_terms($project_id, 'project_city');
-                $city = 'N/A';
-                if ($city_terms && !is_wp_error($city_terms)) {
-                    $city = $city_terms[0]->name;
-                }
-
-                $location = 'N/A';
-                if ($city != 'N/A' && $state) {
-                    $location = $city . ', ' . $state;
-                } elseif ($city != 'N/A') {
-                    $location = $city;
-                } elseif ($state) {
-                    $location = $state;
-                }
-
-                $projects_data[] = [
-                    'id' => $project_id,
-                    'title' => get_the_title(),
-                    'location' => $location,
-                    'budget' => get_post_meta($project_id, 'total_project_cost', true),
-                    'link' => get_permalink(),
+            // Add state filter if provided
+            if (!empty($state)) {
+                $args['meta_query'][] = [
+                    'key' => '_project_state',
+                    'value' => $state,
+                    'compare' => '='
                 ];
             }
-        }
-        wp_reset_postdata();
 
-        wp_send_json_success(['projects' => $projects_data]);
+            // Add city filter if provided
+            if (!empty($city)) {
+                $args['meta_query'][] = [
+                    'key' => '_project_city',
+                    'value' => $city,
+                    'compare' => '='
+                ];
+            }
+
+            $query = new WP_Query($args);
+            
+            error_log('Found ' . $query->found_posts . ' projects');
+
+            if ($query->have_posts()) {
+                ob_start();
+                while ($query->have_posts()) {
+                    $query->the_post();
+                    $project_id = get_the_ID();
+                    
+                    // Get all meta data with defaults
+                    $total_cost = get_post_meta($project_id, '_total_project_cost', true);
+                    $total_cost = $total_cost ? $total_cost : '0';
+                    
+                    $state_val = get_post_meta($project_id, '_project_state', true);
+                    $city_val = get_post_meta($project_id, '_project_city', true);
+                    $system_size = get_post_meta($project_id, '_solar_system_size_kw', true);
+                    $location = trim($city_val . ', ' . $state_val, ', ');
+                    ?>
+                    <div class="project-item">
+                        <h3><?php echo esc_html(get_the_title()); ?></h3>
+                        <p><strong>Location:</strong> <?php echo esc_html($location ?: 'Not specified'); ?></p>
+                        <p><strong>System Size:</strong> <?php echo esc_html($system_size ?: 'N/A'); ?> kW</p>
+                        <p><strong>Budget:</strong> ₹<?php echo esc_html(number_format($total_cost)); ?></p>
+                        <a href="<?php echo esc_url(get_permalink()); ?>" class="btn btn-primary">View Details</a>
+                    </div>
+                    <?php
+                }
+                $html = ob_get_clean();
+                wp_reset_postdata();
+                
+                wp_send_json_success(['html' => $html, 'count' => $query->found_posts]);
+            } else {
+                wp_send_json_success(['html' => '', 'count' => 0]);
+            }
+        } catch (Exception $e) {
+            error_log('Marketplace error: ' . $e->getMessage());
+            wp_send_json_error(['message' => 'Server error: ' . $e->getMessage()]);
+        }
+        
+        wp_die(); // Always end AJAX handlers with wp_die()
     }
+
 
     public function assign_area_manager_location() {
         check_ajax_referer('assign_location_nonce', 'nonce');

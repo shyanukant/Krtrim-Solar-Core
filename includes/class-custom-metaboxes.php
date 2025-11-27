@@ -49,6 +49,7 @@ class SP_Custom_Metaboxes {
         $client_address = get_post_meta( $post->ID, '_client_address', true );
         $client_phone_number = get_post_meta( $post->ID, '_client_phone_number', true );
         $project_start_date = get_post_meta( $post->ID, '_project_start_date', true );
+        $total_project_cost = get_post_meta( $post->ID, '_total_project_cost', true );
         
         $vendor_assignment_method = get_post_meta( $post->ID, '_vendor_assignment_method', true ) ?: 'manual';
         $assigned_vendor_id = get_post_meta( $post->ID, '_assigned_vendor_id', true );
@@ -101,6 +102,12 @@ class SP_Custom_Metaboxes {
                             <input type="text" readonly value="<?php echo esc_attr($project_city); ?>" />
                             <input type="hidden" name="project_city" value="<?php echo esc_attr($project_city); ?>" />
                         <?php endif; ?>
+                    </td>
+                </tr>
+                <tr>
+                    <th><label for="total_project_cost">Total Project Cost (₹)</label></th>
+                    <td>
+                        <input type="number" id="total_project_cost" name="total_project_cost" value="<?php echo esc_attr($total_project_cost); ?>" step="0.01" placeholder="e.g., 500000">
                     </td>
                 </tr>
                 <tr>
@@ -246,21 +253,29 @@ class SP_Custom_Metaboxes {
     }
 
     public function save_metabox_data( $post_id ) {
+        // Verify nonce
         if ( ! isset( $_POST['sp_metabox_nonce'] ) || ! wp_verify_nonce( $_POST['sp_metabox_nonce'], 'sp_save_metabox_data' ) ) {
             return;
         }
+        
+        // Check autosave
         if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
             return;
         }
+        
+        // Check post type
         if ( isset( $_POST['post_type'] ) && 'solar_project' == $_POST['post_type'] ) {
             if ( ! current_user_can( 'edit_post', $post_id ) ) {
                 return;
             }
+        } else {
+            return;
         }
 
         $fields = array(
             'project_state',
             'project_city',
+            'total_project_cost',
             'project_status',
             'client_user_id',
             'solar_system_size_kw',

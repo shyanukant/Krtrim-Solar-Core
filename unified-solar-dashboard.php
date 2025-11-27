@@ -207,23 +207,31 @@ final class Krtrim_Solar_Core {
 			]);
 		}
 
-		if ( is_page( 'project-marketplace' ) ) {
-			wp_enqueue_script( 'marketplace-js', $this->dir_url . 'assets/js/marketplace.js', ['jquery'], $this->version, true );
+		
+		// TEMPORARY: Load marketplace JS on ALL pages to test
+		// TODO: Revert to conditional loading after testing
+		wp_enqueue_script('marketplace-js', $this->dir_url . 'assets/js/marketplace.js', ['jquery'], time(), true); // Using time() to prevent cache
 
-			$json_file = $this->dir_path . 'assets/data/indian-states-cities.json';
-			$states_cities = json_decode( file_get_contents( $json_file ), true );
-
-			wp_localize_script( 'marketplace-js', 'marketplace_vars', [
-				'ajax_url' => admin_url( 'admin-ajax.php' ),
-				'nonce' => wp_create_nonce( 'filter_projects_nonce' ),
-				'states_cities' => $states_cities['states'],
+		$json_file = $this->dir_path . 'assets/data/indian-states-cities.json';
+		if (file_exists($json_file)) {
+			$states_cities = json_decode(file_get_contents($json_file), true);
+			
+			wp_localize_script('marketplace-js', 'marketplace_vars', [
+				'ajax_url' => admin_url('admin-ajax.php'),
+				'nonce' => wp_create_nonce('filter_projects_nonce'),
+				'states_cities' => isset($states_cities['states']) ? $states_cities['states'] : [],
 			]);
 		}
 	}
 
 	public function enqueue_admin_scripts( $hook ) {
-		wp_enqueue_style( 'ksc-admin-styles', $this->dir_url . 'assets/css/admin.css', [], $this->version );
-		wp_enqueue_script( 'ksc-admin-scripts', $this->dir_url . 'assets/js/admin.js', [ 'jquery' ], $this->version, true );
+		// Admin widgets already loaded above, skip duplicate
+		// wp_enqueue_style( 'ksc-admin-styles', $this->dir_url . 'assets/css/admin.css', [], $this->version );
+		
+		// Only load admin.js if it exists
+		if ( file_exists( $this->dir_path . 'assets/js/admin.js' ) ) {
+			wp_enqueue_script( 'ksc-admin-scripts', $this->dir_url . 'assets/js/admin.js', [ 'jquery' ], $this->version, true );
+		}
 
 		if ( 'user-edit.php' === $hook || 'profile.php' === $hook ) {
 			wp_enqueue_script( 'user-profile-js', $this->dir_url . 'assets/js/user-profile.js', ['jquery'], $this->version, true );
