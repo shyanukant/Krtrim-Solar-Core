@@ -92,30 +92,76 @@ final class Krtrim_Solar_Core {
 		add_filter( 'template_include', [ $this, 'template_include_single_project' ] );
 		add_filter( 'plugin_action_links_' . plugin_basename( $this->file ), [ $this, 'add_plugin_action_links' ] );
 
-        // Area Manager Redirection & Restriction
-        add_filter( 'login_redirect', [ $this, 'area_manager_login_redirect' ], 10, 3 );
-        add_action( 'admin_init', [ $this, 'restrict_area_manager_admin_access' ] );
+        // Authentication & Access Control for All Roles
+        add_filter( 'login_redirect', [ $this, 'custom_login_redirect' ], 10, 3 );
+        add_action( 'admin_init', [ $this, 'restrict_wp_admin_access' ] );
+        add_filter( 'logout_redirect', [ $this, 'custom_logout_redirect' ] );
 	}
 
-    public function area_manager_login_redirect( $redirect_to, $request, $user ) {
+    /**
+     * Redirect users to appropriate dashboard after login based on role
+     */
+    public function custom_login_redirect( $redirect_to, $request, $user ) {
         if ( isset( $user->roles ) && is_array( $user->roles ) ) {
+            // Area Manager
             if ( in_array( 'area_manager', $user->roles ) ) {
                 return home_url( '/area-manager-dashboard/' );
             }
+            // Solar Client
+            if ( in_array( 'solar_client', $user->roles ) ) {
+                return home_url( '/solar-dashboard/' );
+            }
+            // Solar Vendor
+            if ( in_array( 'solar_vendor', $user->roles ) ) {
+                return home_url( '/solar-dashboard/' );
+            }
+            // Manager (generic)
+            if ( in_array( 'manager', $user->roles ) ) {
+                return home_url( '/solar-dashboard/' );
+            }
         }
-        return $redirect_to;
+        return $redirect_to; // Default for administrators
     }
 
-    public function restrict_area_manager_admin_access() {
+    /**
+     * Restrict WordPress admin access for non-admin roles
+     * Redirects clients, vendors, and area managers to their dashboards
+     * Administrators and Managers have full wp-admin access
+     */
+    public function restrict_wp_admin_access() {
+        // Allow AJAX requests and WordPress heartbeat
         if ( defined( 'DOING_AJAX' ) && DOING_AJAX ) {
             return;
         }
 
         $user = wp_get_current_user();
-        if ( in_array( 'area_manager', (array) $user->roles ) ) {
-            wp_redirect( home_url( '/area-manager-dashboard/' ) );
-            exit;
+        $restricted_roles = [ 'solar_client', 'solar_vendor', 'area_manager' ];
+        
+        // Check if user has any restricted role
+        foreach ( $restricted_roles as $role ) {
+            if ( in_array( $role, (array) $user->roles ) ) {
+                // Define redirect mapping for each role
+                $redirect_map = [
+                    'area_manager'  => '/area-manager-dashboard/',
+                    'solar_client'  => '/solar-dashboard/',
+                    'solar_vendor'  => '/solar-dashboard/',
+                ];
+                
+                $redirect_url = isset( $redirect_map[$role] ) 
+                    ? home_url( $redirect_map[$role] ) 
+                    : home_url( '/solar-dashboard/' );
+                    
+                wp_redirect( $redirect_url );
+                exit;
+            }
         }
+    }
+
+    /**
+     * Redirect to login page after logout
+     */
+    public function custom_logout_redirect() {
+        return wp_login_url();
     }
 
 	public function add_plugin_action_links( $links ) {

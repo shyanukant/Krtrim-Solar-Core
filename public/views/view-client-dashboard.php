@@ -219,6 +219,9 @@ function toggleProjectDetails(projectId) {
                 <h1 id="section-title">Dashboard</h1>
             </div>
             <div class="header-right">
+                <a href="<?php echo esc_url(home_url('/')); ?>" class="home-btn" title="Go to Home">
+                    <span class="icon">🏠</span>
+                </a>
                 <button class="notification-badge" onclick="toggleNotificationPanel()">
                     <span class="icon">🔔</span>
                     <span class="badge-count" id="notif-count">0</span>
@@ -800,6 +803,95 @@ function toggleProjectDetails(projectId) {
             </div>
         </div>
     </main>
+    
+    <!-- Mobile Bottom Navigation (visible only on mobile < 768px) -->
+    <nav class="mobile-bottom-nav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;">
+        <a href="#" class="mobile-nav-item active" data-section="dashboard" onclick="switchSection(event, 'dashboard')">
+            <span class="mobile-nav-icon">📊</span>
+            <span class="mobile-nav-label">Dashboard</span>
+        </a>
+        <a href="#" class="mobile-nav-item" data-section="projects" onclick="switchSection(event, 'projects')">
+            <span class="mobile-nav-icon">⚡️</span>
+            <span class="mobile-nav-label">Projects</span>
+        </a>
+        <a href="#" class="mobile-nav-item" data-section="timeline" onclick="switchSection(event, 'timeline')">
+            <span class="mobile-nav-icon">🔄</span>
+            <span class="mobile-nav-label">Timeline</span>
+        </a>
+        <a href="#" class="mobile-nav-item" onclick="toggleMobileProfile(event)">
+            <span class="mobile-nav-icon">👤</span>
+            <span class="mobile-nav-label">Profile</span>
+        </a>
+    </nav>
+    
+    <!-- Mobile Profile Popup -->
+    <div class="mobile-profile-popup" id="mobileProfilePopup">
+        <div class="mobile-profile-content">
+            <div class="mobile-profile-header">
+                <img src="<?php echo esc_url(get_avatar_url($current_user->ID)); ?>" alt="<?php echo esc_html($current_user->display_name); ?>">
+                <div class="mobile-profile-info">
+                    <h4><?php echo esc_html($current_user->display_name); ?></h4>
+                    <p><?php echo $is_admin ? 'Administrator' : 'Client'; ?></p>
+                </div>
+            </div>
+            <a href="<?php echo wp_logout_url(home_url()); ?>" class="mobile-logout-btn">
+                <span>🚪</span> Logout
+            </a>
+        </div>
+    </div>
+    
+    <!-- Mobile Bottom Nav JavaScript -->
+    <script>
+    function toggleMobileProfile(event) {
+        if (event) event.preventDefault();
+        const popup = document.getElementById('mobileProfilePopup');
+        if (popup) {
+            popup.classList.toggle('active');
+        }
+    }
+    
+    // Close profile popup when clicking outside
+    document.addEventListener('click', function(event) {
+        const popup = document.getElementById('mobileProfilePopup');
+        const profileBtn = event.target.closest('.mobile-nav-item[onclick*="toggleMobileProfile"]');
+        
+        if (popup && popup.classList.contains('active') && !profileBtn && !popup.contains(event.target)) {
+            popup.classList.remove('active');
+        }
+    });
+    
+    // Enhance switchSection to update mobile nav active state
+    (function() {
+        const originalSwitchSection = window.switchSection;
+        
+        window.switchSection = function(event, sectionName) {
+            // Call original function
+            originalSwitchSection(event, sectionName);
+            
+            // Update mobile nav active state
+            const mobileNavItems = document.querySelectorAll('.mobile-nav-item');
+            mobileNavItems.forEach(item => {
+                const itemSection = item.getAttribute('data-section');
+                if (itemSection === sectionName) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+            
+            // Also update sidebar nav for consistency
+            const sidebarNavItems = document.querySelectorAll('.nav-item');
+            sidebarNavItems.forEach(item => {
+                const itemSection = item.getAttribute('data-section');
+                if (itemSection === sectionName) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+        };
+    })();
+    </script>
 </div>
 
 <!-- Image Modal -->

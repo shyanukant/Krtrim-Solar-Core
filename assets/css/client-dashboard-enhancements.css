@@ -427,3 +427,83 @@
         background-position: 200% 0;
     }
 }
+
+/* ===== Mobile Bottom Navigation Enhancements ===== */
+/* Ripple effect on tap */
+.mobile-nav-item {
+    position: relative;
+    overflow: hidden;
+}
+
+.mobile-nav-item::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border-radius: 50%;
+    background: rgba(102, 126, 234, 0.3);
+    transform: translate(-50%, -50%);
+    transition: width 0.6s, height 0.6s;
+}
+
+.mobile-nav-item:active::before {
+    width: 100%;
+    height: 100%;
+}
+
+/* Pulse animation for active item icon */
+@keyframes mobilePulse {
+
+    0%,
+    100% {
+        transform: scale(1.15);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+}
+
+.mobile-nav-item.active .mobile-nav-icon {
+    animation: mobilePulse 2.5s ease-in-out infinite;
+}
+
+/* Gradient text for active label */
+.mobile-nav-item.active .mobile-nav-label {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+}
+
+/* Profile popup backdrop blur */
+.mobile-profile-popup {
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Profile popup slide animation enhancement */
+@keyframes profileSlideUp {
+    from {
+        opacity: 0;
+        transform: translateX(-50%) translateY(40px) scale(0.9);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateX(-50%) translateY(0) scale(1);
+    }
+}
+
+.mobile-profile-popup.active .mobile-profile-content {
+    animation: profileSlideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+/* Smooth transitions for all mobile nav interactions */
+.mobile-bottom-nav * {
+    -webkit-tap-highlight-color: transparent;
+}
