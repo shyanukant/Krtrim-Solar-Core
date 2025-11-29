@@ -65,5 +65,15 @@ class SP_Admin_Menus {
             'ksc-settings',
             'sp_render_general_settings_page'
         );
+
+        // Bid Management Page (New)
+        add_submenu_page(
+            'edit.php?post_type=solar_project',
+            'Bid Management',
+            'Bid Management',
+            'manage_options',
+            'bid-management',
+            'sp_render_bid_management_page'
+        );
     }
 }

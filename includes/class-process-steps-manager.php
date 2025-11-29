@@ -186,6 +186,29 @@ class SP_Process_Steps_Manager {
         // Trigger action hook
         do_action('sp_step_reviewed', $step_id, $submission->project_id, $decision);
 
+        // ✅ AUTO-COMPLETE PROJECT if all steps are approved
+        if ($decision === 'approved') {
+            $remaining_steps = $wpdb->get_var($wpdb->prepare(
+                "SELECT COUNT(*) FROM {$table} WHERE project_id = %d AND admin_status != 'approved'",
+                $submission->project_id
+            ));
+
+            if ($remaining_steps == 0) {
+                update_post_meta($submission->project_id, 'project_status', 'completed');
+                
+                // Notify Client of Completion
+                $client_id = get_post_meta($submission->project_id, '_client_user_id', true);
+                if ($client_id) {
+                    SP_Notifications_Manager::create_notification([
+                        'user_id' => $client_id,
+                        'project_id' => $submission->project_id,
+                        'message' => 'Your project has been marked as Completed!',
+                        'type' => 'project_completed',
+                    ]);
+                }
+            }
+        }
+
         // --- Notification Logic ---
         $whatsapp_data = null;
         $project_id = $submission->project_id;

@@ -476,12 +476,32 @@ class SP_Admin_Widgets {
             ];
         }
 
+        // ✅ RECENT STEP SUBMISSIONS (last 7 days)
+        $steps_table = $wpdb->prefix . 'solar_process_steps';
+        $recent_steps = $wpdb->get_results($wpdb->prepare(
+            "SELECT s.*, p.post_title 
+            FROM {$steps_table} s 
+            JOIN {$wpdb->posts} p ON s.project_id = p.ID 
+            WHERE s.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+            AND s.admin_status = 'pending'
+            ORDER BY s.updated_at DESC 
+            LIMIT 5"
+        ));
+
+        foreach ($recent_steps as $step) {
+            $activities[] = [
+                'icon' => '📤',
+                'text' => sprintf('Step submitted: %s for %s', $step->step_name, $step->post_title),
+                'time' => strtotime($step->updated_at)
+            ];
+        }
+
         // Sort by time
         usort($activities, function($a, $b) {
             return $b['time'] - $a['time'];
         });
 
-        return array_slice($activities, 0, 5);
+        return array_slice($activities, 0, 8); // Increased limit to show more variety
     }
 
     private function get_quick_stats() {

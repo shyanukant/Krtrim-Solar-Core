@@ -70,7 +70,7 @@ function sp_render_project_reviews_page() {
                 <div class="review-header"><h1>Project Reviews</h1></div>
                 <div class="project-list">
                     <?php
-                    $query_args = ['post_type' => 'solar_project', 'posts_per_page' => -1, 'post_status' => ['publish', 'assigned', 'in_progress', 'completed']];
+                    $query_args = ['post_type' => 'solar_project', 'posts_per_page' => -1, 'post_status' => 'publish'];
                     if ($is_area_manager) {
                         $query_args['author'] = $current_user->ID;
                     }
@@ -123,7 +123,7 @@ function sp_render_project_reviews_page() {
                                             <span class="toggle-icon">&rtrif;</span>
                                             <div class="toggle-title">Step <?php echo $submission->step_number; ?>: <?php echo esc_html($submission->step_name); ?></div>
                                         </div>
-                                        <span class="status-badge <?php echo esc_attr($submission->admin_status); ?>"><?php echo ucfirst($submission->admin_status); ?></span>
+                                        <span class="status-badge <?php echo esc_attr($submission->admin_status); ?>"><?php echo $submission->admin_status === 'pending' ? 'Under Review' : ucfirst($submission->admin_status); ?></span>
                                     </div>
                                     <div class="toggle-content">
                                         <img src="<?php echo esc_url($submission->image_url); ?>" class="submission-image" alt="Submission Image">

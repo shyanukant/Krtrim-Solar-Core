@@ -190,7 +190,7 @@ function render_solar_vendor_dashboard() {
                             <!-- Summary Card -->
                             <div class="card">
                                 <div class="card-header">
-                                    <h3>📊 Overview</h3>
+                                    <h3>📊 Quick Stats</h3>
                                 </div>
                                 <div class="overview-items">
                                     <div class="overview-item">
@@ -417,7 +417,7 @@ function render_solar_vendor_dashboard() {
                                                             
                                                             <?php if ($step->admin_status === 'pending') : ?>
                                                                 <div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #ffc107;">
-                                                                    ⏳ <strong>Waiting for Admin Review</strong><br>
+                                                                    ⏳ <strong>Under Review</strong><br>
                                                                     <small>Your submission is under review. Please wait for admin approval or rejection.</small>
                                                                 </div>
                                                             <?php elseif ($step->admin_status === 'rejected') : ?>
@@ -435,6 +435,10 @@ function render_solar_vendor_dashboard() {
                                                 <?php if ($step->admin_status === 'rejected' || ($step->admin_status === 'pending' && !$step->image_url)) : ?>
                                                     <form class="ajax-upload-form" data-step-id="<?php echo $step->id; ?>" data-project-id="<?php echo $view_project_id; ?>" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
                                                         <?php wp_nonce_field('solar_upload_' . $step->id, 'solar_nonce'); ?>
+                                                        
+                                                        <!-- Hidden fields for JS FormData to pick up -->
+                                                        <input type="hidden" name="step_id" value="<?php echo $step->id; ?>">
+                                                        <input type="hidden" name="project_id" value="<?php echo $view_project_id; ?>">
 
                                                         <div class="form-group">
                                                             <label>Upload Image *</label>
@@ -650,19 +654,13 @@ function render_solar_vendor_dashboard() {
 
                                     <!-- Step 2: State Options (Hidden by default) -->
                                     <div id="state-options-container" style="display: none; margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px; border: 1px solid #eee;">
-                                        <div id="buy-state-option" style="margin-bottom: 15px;">
-                                            <label class="custom-checkbox" style="display: flex; align-items: center; cursor: pointer;">
-                                                <input type="checkbox" id="buy-state-checkbox" style="width: 18px; height: 18px; margin-right: 10px;">
-                                                <span>
-                                                    <strong>Buy Entire State Coverage</strong>
-                                                    <span style="display: block; font-size: 12px; color: #666;">Includes all current and future cities in this state.</span>
-                                                </span>
-                                                <span style="margin-left: auto; font-weight: 700; color: #2c3e50;">₹500</span>
-                                            </label>
-                                        </div>
-                                        <div id="owned-state-msg" style="display: none; color: #28a745; font-weight: 600; margin-bottom: 15px;">
+                                        <div id="owned-state-msg" style="display: none; color: #28a745; font-weight: 600; margin-bottom: 5px;">
                                             ✅ You already own this state.
                                         </div>
+                                        <div id="new-state-msg" style="color: #007bff; font-weight: 600; margin-bottom: 5px;">
+                                            ℹ️ State Fee: ₹500 (One-time)
+                                        </div>
+                                        <small style="color: #666;">Includes access to all cities in this state.</small>
                                     </div>
 
                                     <!-- Step 3: City Selection -->

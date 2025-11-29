@@ -1135,7 +1135,21 @@ class SP_API_Handlers {
 
         do_action('sp_vendor_step_submitted', $step_id, $project_id);
 
+        // Auto-update project status to 'in_progress' if needed
+        $this->check_and_update_project_status($project_id);
+
         wp_send_json_success(['message' => 'Step submitted successfully! The page will now reload.']);
+    }
+
+    /**
+     * Helper to auto-update project status to 'in_progress'
+     * when vendor submits the first step.
+     */
+    private function check_and_update_project_status($project_id) {
+        $current_status = get_post_meta($project_id, 'project_status', true);
+        if ($current_status === 'assigned') {
+            update_post_meta($project_id, 'project_status', 'in_progress');
+        }
     }
 
     public function get_area_manager_clients() {
@@ -1507,7 +1521,12 @@ class SP_API_Handlers {
     public function review_vendor_submission() {
         check_ajax_referer('sp_review_nonce', 'nonce');
 
-        if (!is_user_logged_in() || !in_array('area_manager', (array)wp_get_current_user()->roles)) {
+        if (!is_user_logged_in()) {
+            wp_send_json_error(['message' => 'Not logged in.']);
+        }
+
+        $user = wp_get_current_user();
+        if (!in_array('area_manager', (array)$user->roles) && !in_array('administrator', (array)$user->roles)) {
             wp_send_json_error(['message' => 'Permission denied.']);
         }
 

@@ -229,7 +229,7 @@ document.addEventListener('DOMContentLoaded', function () {
         setInterval(() => loadNotifications(vendorApiUrl), 10000);
 
         function loadEarningsChart() {
-            $.ajax({
+            jQuery.ajax({
                 url: ksc_dashboard_vars.admin_ajax_url,
                 type: 'POST',
                 data: {
@@ -452,36 +452,35 @@ jQuery(document).ready(function ($) {
 
     function handleStateChange() {
         const selectedState = $(this).val();
-        const stateOptionsContainer = $('#state-options-container');
         const citySelectionContainer = $('#city-selection-container');
         const cityCheckboxes = $('#city-checkboxes');
-        const buyStateOption = $('#buy-state-option');
         const ownedStateMsg = $('#owned-state-msg');
-        const buyStateCheckbox = $('#buy-state-checkbox');
 
         // Reset UI
         cityCheckboxes.empty();
-        buyStateCheckbox.prop('checked', false);
+
+        // Hide state options container as we removed the checkbox
+        $('#state-options-container').hide();
 
         if (!selectedState) {
-            stateOptionsContainer.hide();
             citySelectionContainer.hide();
             updateCartSummary();
             return;
         }
 
-        stateOptionsContainer.show();
         citySelectionContainer.show();
 
         // Check if State is Owned
         const isOwned = vendorCoverage.ownedStates.includes(selectedState);
 
         if (isOwned) {
-            buyStateOption.hide();
             ownedStateMsg.show();
+            // If owned, we don't charge for state, just show message
+            $('#state-options-container').show();
+            $('#buy-state-option').hide();
         } else {
-            buyStateOption.show();
             ownedStateMsg.hide();
+            // If not owned, we charge 500 automatically
         }
 
         // Populate Cities
@@ -514,7 +513,8 @@ jQuery(document).ready(function ($) {
 
     function updateCartSummary() {
         const selectedState = $('#coverage-state-select').val();
-        const buyState = $('#buy-state-checkbox').is(':checked') && $('#buy-state-option').is(':visible');
+        const isOwned = vendorCoverage.ownedStates.includes(selectedState);
+
         const selectedCities = [];
         $('.city-checkbox:checked').each(function () {
             selectedCities.push($(this).val());
@@ -525,11 +525,12 @@ jQuery(document).ready(function ($) {
 
         let total = 0;
 
-        if (buyState && selectedState) {
+        // Mandatory State Fee if not owned
+        if (selectedState && !isOwned) {
             total += STATE_PRICE;
             cartItemsContainer.append(`
                 <div style="display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 14px;">
-                    <span>State: <strong>${selectedState}</strong></span>
+                    <span>State Fee: <strong>${selectedState}</strong></span>
                     <span>₹${STATE_PRICE}</span>
                 </div>
             `);

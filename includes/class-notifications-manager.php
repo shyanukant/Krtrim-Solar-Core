@@ -114,6 +114,13 @@ class SP_Notifications_Manager {
                 'message' => $message,
                 'type' => 'submission',
             ]);
+            
+            // Send Email to Admin
+            $subject = 'New Vendor Submission: ' . $project->post_title;
+            $body = "<p>Hello " . $admin->display_name . ",</p>";
+            $body .= "<p>" . $message . "</p>";
+            $body .= "<p><a href='" . admin_url('admin.php?page=project-reviews&project=' . $project_id) . "'>Review Submission</a></p>";
+            wp_mail($admin->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
         }
 
         // ✅ NOTIFY AREA MANAGER - Step Submitted
@@ -143,6 +150,13 @@ class SP_Notifications_Manager {
                     'message' => $message,
                     'type' => 'vendor_submission',
                 ]);
+                
+                // Send Email to Area Manager
+                $subject = 'New Vendor Submission in Your Area: ' . $project->post_title;
+                $body = "<p>Hello " . $area_manager->display_name . ",</p>";
+                $body .= "<p>" . $message . "</p>";
+                $body .= "<p><a href='" . admin_url('admin.php?page=project-reviews&project=' . $project_id) . "'>Review Submission</a></p>";
+                wp_mail($area_manager->user_email, $subject, $body, ['Content-Type: text/html; charset=UTF-8']);
             }
         }
     }

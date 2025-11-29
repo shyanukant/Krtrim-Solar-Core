@@ -59,6 +59,7 @@ final class Krtrim_Solar_Core {
 		require_once $this->dir_path . 'includes/class-notifications-manager.php';
 		require_once $this->dir_path . 'admin/views/view-vendor-approval.php';
 		require_once $this->dir_path . 'admin/views/view-project-reviews.php';
+		require_once $this->dir_path . 'admin/views/view-bid-management.php';
 		require_once $this->dir_path . 'admin/views/view-general-settings.php';
 		require_once $this->dir_path . 'admin/views/view-team-analysis.php';
 		require_once $this->dir_path . 'public/views/view-client-dashboard.php';
