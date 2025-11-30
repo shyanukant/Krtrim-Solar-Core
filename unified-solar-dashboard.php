@@ -459,11 +459,31 @@ function sp_create_plugin_essentials() {
 	require_once ABSPATH . 'wp-admin/includes/upgrade.php';
 
 	$bids_table_name = $wpdb->prefix . 'project_bids';
-	$sql_bids        = "CREATE TABLE $bids_table_name ( id mediumint(9) NOT NULL AUTO_INCREMENT, project_id bigint(20) NOT NULL, vendor_id bigint(20) NOT NULL, bid_amount decimal(10, 2) NOT NULL, bid_type varchar(10) NOT NULL DEFAULT 'open', bid_details text, created_at datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY  (id) ) $charset_collate;";
+	$sql_bids = "CREATE TABLE $bids_table_name (
+		id mediumint(9) NOT NULL AUTO_INCREMENT,
+		project_id bigint(20) NOT NULL,
+		vendor_id bigint(20) NOT NULL,
+		bid_amount decimal(10, 2) NOT NULL,
+		bid_type varchar(10) NOT NULL DEFAULT 'open',
+		bid_details text,
+		created_at datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY  (id)
+	) $charset_collate;";
 	dbDelta( $sql_bids );
 
 	$payments_table_name = $wpdb->prefix . 'solar_vendor_payments';
-	$sql_payments        = "CREATE TABLE $payments_table_name ( id mediumint(9) NOT NULL AUTO_INCREMENT, vendor_id bigint(20) NOT NULL, razorpay_payment_id varchar(255) NOT NULL, razorpay_order_id varchar(255) NOT NULL, amount decimal(10, 2) NOT NULL, states_purchased text, cities_purchased text, payment_status varchar(50) NOT NULL, payment_date datetime DEFAULT '0000-00-00 00:00:00' NOT NULL, PRIMARY KEY  (id) ) $charset_collate;";
+	$sql_payments = "CREATE TABLE $payments_table_name (
+		id mediumint(9) NOT NULL AUTO_INCREMENT,
+		vendor_id bigint(20) NOT NULL,
+		razorpay_payment_id varchar(255) NOT NULL,
+		razorpay_order_id varchar(255) NOT NULL,
+		amount decimal(10, 2) NOT NULL,
+		states_purchased text,
+		cities_purchased text,
+		payment_status varchar(50) NOT NULL,
+		payment_date datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+		PRIMARY KEY  (id)
+	) $charset_collate;";
 	dbDelta( $sql_payments );
 
 	$table_process = $wpdb->prefix . 'solar_process_steps';

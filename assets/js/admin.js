@@ -22,7 +22,7 @@ jQuery(document).ready(function ($) {
             type: 'POST',
             data: {
                 action: 'update_vendor_status',
-                user_id: userId,
+                vendor_id: userId,
                 status: action === 'approve' ? 'yes' : 'denied',  // ✅ Map to PHP expected values
                 nonce: nonce,
             },
@@ -203,7 +203,7 @@ jQuery(document).ready(function ($) {
         const formData = {
             action: 'update_vendor_details',
             nonce: nonce,
-            user_id: $('#edit-vendor-id').val(),
+            vendor_id: $('#edit-vendor-id').val(),
             company_name: $('#edit-company-name').val(),
             phone: $('#edit-phone').val(),
             states: $('#edit-states').val(),

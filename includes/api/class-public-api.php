@@ -3,9 +3,11 @@
  * Public API Class
  * 
  * Handles public (non-authenticated) AJAX endpoints.
+ * Includes Razorpay payment order creation.
  * 
  * @package Krtrim_Solar_Core
  * @since 1.0.1
+ * @updated 2025-11-30 - Added Razorpay order creation
  */
 
 // Exit if accessed directly
@@ -16,9 +18,16 @@ if (!defined('ABSPATH')) {
 class KSC_Public_API {
     
     public function __construct() {
+        // Debug logging
+        error_log('KSC_Public_API: Constructor called');
+        
         // Vendor registration
         add_action('wp_ajax_complete_vendor_registration', [$this, 'complete_vendor_registration']);
         add_action('wp_ajax_nopriv_complete_vendor_registration', [$this, 'complete_vendor_registration']);
+        
+        // Razorpay order creation
+        add_action('wp_ajax_nopriv_create_razorpay_order', [$this, 'create_razorpay_order']);
+        error_log('KSC_Public_API: Razorpay action registered');
         
         // Email verification
         add_action('init', [$this, 'verify_vendor_email']);
@@ -37,20 +46,45 @@ class KSC_Public_API {
      * Complete vendor registration
      */
     public function complete_vendor_registration() {
+        error_log('KSC_Public_API: complete_vendor_registration called');
         check_ajax_referer('vendor_registration_nonce', 'nonce');
         
-        $username = sanitize_user($_POST['username']);
-        $email = sanitize_email($_POST['email']);
-        $password = $_POST['password'];
-        $company_name = sanitize_text_field($_POST['company_name']);
-        $phone = sanitize_text_field($_POST['phone']);
-        $states = isset($_POST['states']) && is_array($_POST['states']) ? $_POST['states'] : [];
-        $cities = isset($_POST['cities']) && is_array($_POST['cities']) ? $_POST['cities'] : [];
-        $payment_response = json_decode(stripslashes($_POST['payment_response']), true);
+        // Parse registration data
+        $registration_data = isset($_POST['registration_data']) ? json_decode(stripslashes($_POST['registration_data']), true) : [];
+        $payment_response = isset($_POST['payment_response']) ? json_decode(stripslashes($_POST['payment_response']), true) : [];
         
-        if (username_exists($username)) {
-            wp_send_json_error(['message' => 'Username already exists.']);
+        if (empty($registration_data)) {
+            error_log('KSC_Public_API: No registration data found');
+            wp_send_json_error(['message' => 'Invalid registration data']);
         }
+        
+        $basic_info = $registration_data['basic_info'] ?? [];
+        $coverage = $registration_data['coverage'] ?? [];
+        
+        $email = sanitize_email($basic_info['email'] ?? '');
+        
+        // Generate username from email prefix
+        $email_parts = explode('@', $email);
+        $base_username = sanitize_user($email_parts[0]);
+        $username = $base_username;
+        $counter = 1;
+        
+        // Ensure username is unique
+        while (username_exists($username)) {
+            $username = $base_username . $counter;
+            $counter++;
+        }
+        
+        $password = $basic_info['password'] ?? '';
+        $company_name = sanitize_text_field($basic_info['company_name'] ?? '');
+        $phone = sanitize_text_field($basic_info['phone'] ?? '');
+        $full_name = sanitize_text_field($basic_info['full_name'] ?? '');
+        
+        $states = $coverage['states'] ?? [];
+        $cities = $coverage['cities'] ?? [];
+        $amount = floatval($registration_data['total_amount'] ?? 0);
+        
+        error_log("KSC_Public_API: Attempting to register user: $email with username: $username");
         
         if (email_exists($email)) {
             wp_send_json_error(['message' => 'Email already registered.']);
@@ -59,12 +93,15 @@ class KSC_Public_API {
         $user_id = wp_create_user($username, $password, $email);
         
         if (is_wp_error($user_id)) {
+            error_log('KSC_Public_API: wp_create_user failed: ' . $user_id->get_error_message());
             wp_send_json_error(['message' => $user_id->get_error_message()]);
         }
         
         $user = new WP_User($user_id);
         $user->set_role('solar_vendor');
         
+        // Update user meta
+        update_user_meta($user_id, 'first_name', $full_name); // Store full name
         update_user_meta($user_id, 'company_name', $company_name);
         update_user_meta($user_id, 'phone', $phone);
         update_user_meta($user_id, 'purchased_states', $states);
@@ -78,7 +115,7 @@ class KSC_Public_API {
                 'vendor_id' => $user_id,
                 'razorpay_payment_id' => $payment_response['razorpay_payment_id'],
                 'razorpay_order_id' => $payment_response['razorpay_order_id'] ?? '',
-                'amount' => floatval($_POST['amount']),
+                'amount' => $amount,
                 'states_purchased' => json_encode($states),
                 'cities_purchased' => json_encode($cities),
                 'payment_status' => 'completed',
@@ -94,7 +131,7 @@ class KSC_Public_API {
         update_user_meta($user_id, 'email_verified', 'no');
         update_user_meta($user_id, 'account_approved', 'pending');
         
-        // Send verification email
+        // Send verification email to Vendor
         $verify_url = add_query_arg([
             'action' => 'verify_vendor_email',
             'token' => $token,
@@ -108,6 +145,12 @@ class KSC_Public_API {
         );
         
         wp_mail($email, $subject, $message);
+        
+        // Notify Admin
+        // 'admin' argument sends email ONLY to admin, not the user (since we sent custom email above)
+        wp_new_user_notification($user_id, null, 'admin');
+        
+        error_log("KSC_Public_API: Registration successful for user $user_id");
         
         wp_send_json_success([
             'message' => 'Registration successful! Please check your email to verify your account.',
@@ -218,6 +261,70 @@ class KSC_Public_API {
         }
         
         wp_send_json_success($data['states']);
+    }
+    
+    /**
+     * Create Razorpay order for vendor registration payment
+     */
+    public function create_razorpay_order() {
+        error_log('KSC_Public_API: create_razorpay_order() called');
+        error_log('KSC_Public_API: POST data: ' . print_r($_POST, true));
+        
+        check_ajax_referer('vendor_registration_nonce', 'nonce');
+        error_log('KSC_Public_API: Nonce verified');
+        
+        $amount = isset($_POST['amount']) ? floatval($_POST['amount']) : 0;
+        error_log('KSC_Public_API: Amount: ' . $amount);
+        
+        if ($amount <= 0) {
+            error_log('KSC_Public_API: Amount validation failed');
+            wp_send_json_error(['message' => 'Invalid amount']);
+        }
+        
+        // Get Razorpay settings
+        $options = get_option('sp_vendor_options');
+        $mode = isset($options['razorpay_mode']) ? $options['razorpay_mode'] : 'test';
+        
+        // Select correct credentials based on mode
+        if ($mode === 'live') {
+            $key_id = isset($options['razorpay_live_key_id']) ? $options['razorpay_live_key_id'] : '';
+            $key_secret = isset($options['razorpay_live_key_secret']) ? $options['razorpay_live_key_secret'] : '';
+        } else {
+            $key_id = isset($options['razorpay_test_key_id']) ? $options['razorpay_test_key_id'] : '';
+            $key_secret = isset($options['razorpay_test_key_secret']) ? $options['razorpay_test_key_secret'] : '';
+        }
+        
+        if (empty($key_id) || empty($key_secret)) {
+            wp_send_json_error(['message' => 'Razorpay payment gateway is not configured. Please contact administrator.']);
+        }
+        
+        // Load Razorpay client
+        require_once plugin_dir_path(dirname(__FILE__)) . 'class-razorpay-light-client.php';
+        
+        try {
+            // Initialize with key_id and key_secret (constructor will be modified to accept them)
+            $razorpay = new SP_Razorpay_Light_Client();
+            
+            // Create order - convert amount to paise
+            $amount_in_paise = $amount * 100;
+            $receipt_id = 'vendor_reg_' . time();
+            
+            $result = $razorpay->create_order($amount_in_paise, 'INR', $receipt_id);
+            
+            if ($result['success'] && isset($result['data']['id'])) {
+                wp_send_json_success([
+                    'order_id' => $result['data']['id'],
+                    'amount' => $amount_in_paise,
+                    'currency' => 'INR'
+                ]);
+            } else {
+                $error_msg = isset($result['message']) ? $result['message'] : 'Failed to create payment order';
+                wp_send_json_error(['message' => $error_msg]);
+            }
+        } catch (Exception $e) {
+            error_log('Razorpay order creation error: ' . $e->getMessage());
+            wp_send_json_error(['message' => 'Payment order creation failed: ' . $e->getMessage()]);
+        }
     }
     
     /**

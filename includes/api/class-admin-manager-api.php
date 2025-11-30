@@ -924,7 +924,7 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
      * Update vendor details
      */
     public function update_vendor_details() {
-        // check_ajax_referer('update_vendor_details_nonce', 'nonce');
+        check_ajax_referer('sp_vendor_approval_nonce', 'nonce');
         
         $this->verify_admin_or_manager();
         
@@ -953,6 +953,17 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
                 'ID' => $vendor_id,
                 'display_name' => sanitize_text_field($_POST['display_name'])
             ]);
+        }
+        
+        // Update coverage states and cities
+        if (isset($_POST['states']) && is_array($_POST['states'])) {
+            $states = array_map('sanitize_text_field', $_POST['states']);
+            update_user_meta($vendor_id, 'purchased_states', $states);
+        }
+        
+        if (isset($_POST['cities']) && is_array($_POST['cities'])) {
+            $cities = array_map('sanitize_text_field', $_POST['cities']);
+            update_user_meta($vendor_id, 'purchased_cities', $cities);
         }
         
         wp_send_json_success(['message' => 'Vendor details updated successfully']);

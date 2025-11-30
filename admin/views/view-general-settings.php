@@ -247,7 +247,6 @@ function sp_register_general_settings() {
         'sp_project_section'
     );
 }
-add_action('admin_init', 'sp_register_general_settings');
 
 // Enqueue media uploader
 function sp_enqueue_admin_media_scripts($hook) {
@@ -256,7 +255,12 @@ function sp_enqueue_admin_media_scripts($hook) {
     }
     wp_enqueue_media();
 }
-add_action('admin_enqueue_scripts', 'sp_enqueue_admin_media_scripts');
+
+// Only register hooks when in admin area to prevent output during activation
+if (is_admin()) {
+    add_action('admin_init', 'sp_register_general_settings');
+    add_action('admin_enqueue_scripts', 'sp_enqueue_admin_media_scripts');
+}
 
 // --- Callbacks ---
 
