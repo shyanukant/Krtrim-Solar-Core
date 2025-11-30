@@ -53,6 +53,9 @@ function render_solar_client_dashboard() {
 
 <!-- Global JavaScript Functions (must be before HTML) -->
 <script>
+// WordPress AJAX URL
+var ajaxurl = '<?php echo admin_url('admin-ajax.php'); ?>';
+
 // Section Switching
 function switchSection(event, sectionName) {
     if (event) event.preventDefault();
@@ -129,8 +132,40 @@ function submitComment(stepId, projectId) {
         return;
     }
     
-    alert('Comment functionality coming soon!');
-    toggleCommentForm(stepId);
+    const comment = textarea.value.trim();
+    const submitBtn = event.target;
+    const originalText = submitBtn.textContent;
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Submitting...';
+    
+    jQuery.ajax({
+        url: ajaxurl,
+        type: 'POST',
+        data: {
+            action: 'client_submit_step_comment',
+            step_id: stepId,
+            comment_text: comment,
+            nonce: '<?php echo wp_create_nonce("client_comment_nonce"); ?>'
+        },
+        success: function(response) {
+            if (response.success) {
+                alert('✓ Comment submitted successfully!');
+                toggleCommentForm(stepId);
+                textarea.value = '';
+                // Reload to show the comment
+                setTimeout(() => location.reload(), 500);
+            } else {
+                alert('Error: ' + (response.data.message || 'Unknown error'));
+                submitBtn.disabled = false;
+                submitBtn.textContent = originalText;
+            }
+        },
+        error: function() {
+            alert('Network error. Please try again.');
+            submitBtn.disabled = false;
+            submitBtn.textContent = originalText;
+        }
+    });
 }
 
 function openImageModal(src) {
@@ -768,6 +803,14 @@ function toggleProjectDetails(projectId) {
                                             <div class="step-section">
                                                 <h4>👨‍💼 Admin Notes</h4>
                                                 <p><?php echo esc_html($step->admin_comment); ?></p>
+                                            </div>
+                                        <?php endif; ?>
+                                        
+                                        <!-- Client Feedback -->
+                                        <?php if ($step->client_comment) : ?>
+                                            <div class="step-section">
+                                                <h4>💬 Your Feedback</h4>
+                                                <p><?php echo nl2br(esc_html($step->client_comment)); ?></p>
                                             </div>
                                         <?php endif; ?>
                                         

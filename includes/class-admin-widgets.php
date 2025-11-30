@@ -458,7 +458,7 @@ class SP_Admin_Widgets {
         // ✅ RECENT BIDS (last 7 days)
         global $wpdb;
         $bids_table = $wpdb->prefix . 'project_bids';
-        $recent_bids = $wpdb->get_results($wpdb->prepare(
+        $recent_bids = $wpdb->get_results(
             "SELECT b.*, p.post_title, u.display_name 
             FROM {$bids_table} b 
             JOIN {$wpdb->posts} p ON b.project_id = p.ID 
@@ -466,7 +466,7 @@ class SP_Admin_Widgets {
             WHERE b.created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
             ORDER BY b.created_at DESC 
             LIMIT 3"
-        ));
+        );
 
         foreach ($recent_bids as $bid) {
             $activities[] = [
@@ -478,7 +478,7 @@ class SP_Admin_Widgets {
 
         // ✅ RECENT STEP SUBMISSIONS (last 7 days)
         $steps_table = $wpdb->prefix . 'solar_process_steps';
-        $recent_steps = $wpdb->get_results($wpdb->prepare(
+        $recent_steps = $wpdb->get_results(
             "SELECT s.*, p.post_title 
             FROM {$steps_table} s 
             JOIN {$wpdb->posts} p ON s.project_id = p.ID 
@@ -486,7 +486,7 @@ class SP_Admin_Widgets {
             AND s.admin_status = 'pending'
             ORDER BY s.updated_at DESC 
             LIMIT 5"
-        ));
+        );
 
         foreach ($recent_steps as $step) {
             $activities[] = [

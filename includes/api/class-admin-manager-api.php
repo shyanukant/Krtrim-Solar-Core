@@ -250,6 +250,9 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
         update_post_meta($project_id, 'winning_bid_amount', $bid_amount);
         update_post_meta($project_id, 'project_status', 'assigned');
         
+        // Create default process steps for the project
+        $this->create_default_process_steps($project_id);
+        
         // Notify vendor
         $vendor = get_userdata($vendor_id);
         $project_title = get_the_title($project_id);
@@ -284,6 +287,69 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
             'message' => 'Project awarded successfully!',
             'whatsapp_data' => $whatsapp_data ?? null
         ]);
+    }
+    
+    /**
+     * Create default process steps for a newly assigned project
+     * 
+     * @param int $project_id
+     * @return bool Success status
+     */
+    private function create_default_process_steps($project_id) {
+        // Get default steps from template
+        $default_steps = get_option('sp_default_process_steps', [
+            'Site Visit',
+            'Design Approval',
+            'Material Delivery',
+            'Installation',
+            'Grid Connection',
+            'Final Inspection'
+        ]);
+        
+        if (empty($default_steps)) {
+            error_log("No default process steps found for project {$project_id}");
+            return false;
+        }
+        
+        global $wpdb;
+        $table = $wpdb->prefix . 'solar_process_steps';
+        
+        // Check if steps already exist (prevent duplicates)
+        $existing_steps = $wpdb->get_var($wpdb->prepare(
+            "SELECT COUNT(*) FROM {$table} WHERE project_id = %d",
+            $project_id
+        ));
+        
+        if ($existing_steps > 0) {
+            error_log("Steps already exist for project {$project_id}, skipping creation");
+            return false;
+        }
+        
+        // Insert each step
+        $success_count = 0;
+        foreach ($default_steps as $index => $step_name) {
+            $result = $wpdb->insert(
+                $table,
+                [
+                    'project_id' => $project_id,
+                    'step_number' => $index + 1,
+                    'step_name' => sanitize_text_field($step_name),
+                    'admin_status' => 'pending',
+                    'created_at' => current_time('mysql')
+                ],
+                ['%d', '%d', '%s', '%s', '%s']
+            );
+            
+            if ($result) {
+                $success_count++;
+            } else {
+                error_log("Failed to create step: {$step_name} for project {$project_id}");
+            }
+        }
+        
+        error_log("Created {$success_count} steps for project {$project_id}");
+        
+        return $success_count > 0;
     }
     
     /**
@@ -366,14 +432,22 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
             }
             
             if (!empty($city)) {
-                $args['meta_query'][] = [
-                    'key' => '_project_city',
-                    'value' => $city,
-                    'compare' => '='
-                ];
-            }
-            
-            $query = new WP_Query($args);
+            $args['meta_query'][] = [
+                'key' => '_project_city',
+                'value' => $city,
+                'compare' => '='
+            ];
+        }
+        
+        // Only show projects with 'pending' status in marketplace
+        // Once project is assigned/in_progress/completed, it should not appear
+        $args['meta_query'][] = [
+            'key' => 'project_status',
+            'value' => 'pending',
+            'compare' => '='
+        ];
+        
+        $query = new WP_Query($args);
             
             // Check if vendor and get coverage
             $vendor_id = 0;
