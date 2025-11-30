@@ -146,7 +146,7 @@ function sp_render_project_reviews_page() {
                             $approved_steps = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$steps_table} WHERE project_id = %d AND admin_status = 'approved'", $pid));
                             $progress = $total_steps > 0 ? round(($approved_steps / $total_steps) * 100) : 0;
                             
-                            $pending_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$steps_table} WHERE project_id = %d AND admin_status = 'pending' AND image_url IS NOT NULL", $pid));
+                            $pending_count = $wpdb->get_var($wpdb->prepare("SELECT COUNT(*) FROM {$steps_table} WHERE project_id = %d AND admin_status = 'under_review'", $pid));
                             ?>
                             <div class="project-card">
                                 <div class="project-card-header">
@@ -413,13 +413,13 @@ function sp_render_project_reviews_page() {
                                             <span class="toggle-icon">&rtrif;</span>
                                             <div class="toggle-title">Step <?php echo $submission->step_number; ?>: <?php echo esc_html($submission->step_name); ?></div>
                                         </div>
-                                        <span class="status-badge <?php echo esc_attr($submission->admin_status); ?>"><?php echo $submission->admin_status === 'pending' ? 'Under Review' : ucfirst($submission->admin_status); ?></span>
+                                        <span class="status-badge <?php echo esc_attr($submission->admin_status); ?>"><?php echo $submission->admin_status === 'under_review' ? 'Under Review' : ucfirst(str_replace('_', ' ', $submission->admin_status)); ?></span>
                                     </div>
                                     <div class="toggle-content">
                                         <img src="<?php echo esc_url($submission->image_url); ?>" class="submission-image" alt="Submission Image">
                                         <div class="submission-comment"><strong>Vendor Comment:</strong> <?php echo esc_html($submission->vendor_comment); ?></div>
                                         
-                                        <?php if ($submission->admin_status === 'pending') : ?>
+                                        <?php if ($submission->admin_status === 'under_review') : ?>
                                             <div class="review-form">
                                                 <input type="text" class="review-input" placeholder="Add approval/rejection reason...">
                                                 <button type="button" class="btn-approve review-btn" data-decision="approved" data-step-id="<?php echo $submission->id; ?>">Approve</button>

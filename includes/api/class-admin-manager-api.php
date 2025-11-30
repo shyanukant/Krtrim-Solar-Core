@@ -106,7 +106,7 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
         $pending_reviews = $wpdb->get_var($wpdb->prepare(
             "SELECT COUNT(*) FROM {$wpdb->prefix}solar_process_steps ps 
              JOIN {$wpdb->posts} p ON ps.project_id = p.ID 
-             WHERE p.post_author = %d AND ps.admin_status = 'pending' AND ps.image_url IS NOT NULL",
+             WHERE p.post_author = %d AND ps.admin_status = 'under_review'",
             $manager->ID
         ));
         
@@ -573,7 +573,7 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
                 // Get pending submissions count
                 $pending_submissions = $wpdb->get_var($wpdb->prepare(
                     "SELECT COUNT(*) FROM {$wpdb->prefix}solar_process_steps 
-                     WHERE project_id = %d AND admin_status = 'pending' AND image_url IS NOT NULL",
+                     WHERE project_id = %d AND admin_status = 'under_review'",
                     $project_id
                 ));
                 
@@ -1052,16 +1052,20 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
         $manager = $this->verify_area_manager_role();
         
         global $wpdb;
+
+        $steps_table = $wpdb->prefix . 'solar_process_steps';
+        $limit = isset($_POST['limit']) ? intval($_POST['limit']) : 10;
+        $offset = isset($_POST['offset']) ? intval($_POST['offset']) : 0;
         
         $reviews = $wpdb->get_results($wpdb->prepare(
-            "SELECT ps.* 
-             FROM {$wpdb->prefix}solar_process_steps ps
+            "SELECT ps.*, p.post_title, p.ID as project_id
+             FROM {$steps_table} ps
              JOIN {$wpdb->posts} p ON ps.project_id = p.ID
              WHERE p.post_author = %d 
-             AND ps.admin_status = 'pending' 
-             AND ps.image_url IS NOT NULL
-             ORDER BY ps.updated_at DESC",
-            $manager->ID
+             AND ps.admin_status = 'under_review'
+             ORDER BY ps.updated_at DESC
+             LIMIT %d OFFSET %d",
+            $manager->ID, $limit, $offset
         ), ARRAY_A);
         
         wp_send_json_success(['reviews' => $reviews]);

@@ -483,7 +483,7 @@ class SP_Admin_Widgets {
             FROM {$steps_table} s 
             JOIN {$wpdb->posts} p ON s.project_id = p.ID 
             WHERE s.updated_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
-            AND s.admin_status = 'pending'
+            AND s.admin_status = 'under_review'
             ORDER BY s.updated_at DESC 
             LIMIT 5"
         );

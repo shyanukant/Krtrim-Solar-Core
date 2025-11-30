@@ -1,4 +1,15 @@
 <?php
+// Prevent caching of dynamic client dashboard
+if (!headers_sent()) {
+    header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    // LiteSpeed Cache specific directive
+    if (defined('LSCWP_V')) {
+        do_action('litespeed_control_set_nocache', 'client dashboard is user-specific and dynamic');
+    }
+}
 
 function render_solar_client_dashboard() {
     $current_user = wp_get_current_user();

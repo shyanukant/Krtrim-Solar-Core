@@ -1,4 +1,15 @@
 <?php
+// Prevent caching of dynamic vendor dashboard
+if (!headers_sent()) {
+    header('Cache-Control: no-cache, no-store, must-revalidate, max-age=0');
+    header('Pragma: no-cache');
+    header('Expires: 0');
+    
+    // LiteSpeed Cache specific directive
+    if (defined('LSCWP_V')) {
+        do_action('litespeed_control_set_nocache', 'vendor dashboard is user-specific and dynamic');
+    }
+}
 
 function render_solar_vendor_dashboard() {
     $current_user = wp_get_current_user();
@@ -377,8 +388,9 @@ function render_solar_vendor_dashboard() {
                                                         <?php 
                                                         if ($is_locked) echo 'Locked until previous step approved';
                                                         elseif ($step->admin_status === 'approved') echo '✅ Approved';
-                                                        elseif ($step->admin_status === 'rejected') echo '❌ Rejected';
-                                                        else echo '⏳ Pending review';
+                                                        elseif ($step->admin_status === 'rejected') echo '❌ Rejected - Resubmit Required';
+                                                        elseif ($step->admin_status === 'under_review') echo '🔍 Under Review';
+                                                        else echo '⏳ Pending - Upload proof';
                                                         ?>
                                                     </div>
                                                 </div>
@@ -391,7 +403,7 @@ function render_solar_vendor_dashboard() {
                                                 else echo '#ffc107';
                                                 ?>
                                             ">
-                                                <?php if ($is_locked) echo 'Locked'; else echo ucfirst($step->admin_status); ?>
+                                                <?php if ($is_locked) echo 'Locked'; elseif ($step->admin_status === 'under_review') echo 'Under Review'; else echo ucfirst(str_replace('_', ' ', $step->admin_status)); ?>
                                             </span>
                                         </div>
 
@@ -400,7 +412,7 @@ function render_solar_vendor_dashboard() {
                                             <?php if (!$is_locked) : ?>
                                                 
                                                 <!-- SHOW SUBMITTED WORK -->
-                                                <?php if ($step->image_url && ($step->admin_status === 'pending' || $step->admin_status === 'rejected')) : ?>
+                                                <?php if ($step->image_url && in_array($step->admin_status, ['under_review', 'approved', 'rejected'])) : ?>
                                                     <div style="background: #f0f7ff; padding: 15px; border-radius: 8px; border-left: 4px solid #007bff; margin-bottom: 15px;">
                                                         <strong>📂 Your Submission</strong>
                                                         <div style="margin-top: 10px;">
@@ -415,10 +427,10 @@ function render_solar_vendor_dashboard() {
                                                                 </div>
                                                             <?php endif; ?>
                                                             
-                                                            <?php if ($step->admin_status === 'pending') : ?>
+                                                            <?php if ($step->admin_status === 'under_review') : ?>
                                                                 <div style="background: #fff3cd; color: #856404; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #ffc107;">
-                                                                    ⏳ <strong>Under Review</strong><br>
-                                                                    <small>Your submission is under review. Please wait for admin approval or rejection.</small>
+                                                                    🔍 <strong>Under Review</strong><br>
+                                                                    <small>Your submission is being reviewed by admin. Please wait for approval or rejection.</small>
                                                                 </div>
                                                             <?php elseif ($step->admin_status === 'rejected') : ?>
                                                                 <div style="background: #fff5f5; color: #721c24; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #dc3545;">
@@ -426,12 +438,20 @@ function render_solar_vendor_dashboard() {
                                                                     <strong>Reason:</strong> <?php echo esc_html($step->admin_comment); ?><br>
                                                                     <small style="margin-top: 8px; display: block;">You can re-submit below</small>
                                                                 </div>
+                                                            <?php elseif ($step->admin_status === 'approved') : ?>
+                                                                <div style="background: #d4edda; color: #155724; padding: 12px; border-radius: 6px; margin-top: 10px; border-left: 4px solid #28a745;">
+                                                                    ✅ <strong>Approved</strong><br>
+                                                                    <?php if ($step->admin_comment) : ?>
+                                                                        <strong>Admin Note:</strong> <?php echo esc_html($step->admin_comment); ?><br>
+                                                                    <?php endif; ?>
+                                                                    <small>This step has been approved!</small>
+                                                                </div>
                                                             <?php endif; ?>
                                                         </div>
                                                     </div>
                                                 <?php endif; ?>
                                                 
-                                                <!-- UPLOAD FORM -->
+                                                <!-- UPLOAD FORM - Show only for pending (not submitted) or rejected -->
                                                 <?php if ($step->admin_status === 'rejected' || ($step->admin_status === 'pending' && !$step->image_url)) : ?>
                                                     <form class="ajax-upload-form" data-step-id="<?php echo $step->id; ?>" data-project-id="<?php echo $view_project_id; ?>" style="margin-top: 15px; padding-top: 15px; border-top: 1px solid #f0f0f0;">
                                                         <?php wp_nonce_field('solar_upload_' . $step->id, 'solar_nonce'); ?>

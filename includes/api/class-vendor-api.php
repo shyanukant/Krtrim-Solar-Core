@@ -156,7 +156,7 @@ class KSC_Vendor_API extends KSC_API_Base {
             [
                 'image_url' => $image_url,
                 'vendor_comment' => $vendor_comment,
-                'admin_status' => 'pending',
+                'admin_status' => 'under_review',  // Changed from 'pending' to show it's submitted
                 'updated_at' => current_time('mysql')
             ],
             ['id' => $step_id],

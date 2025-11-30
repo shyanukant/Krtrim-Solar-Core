@@ -29,7 +29,7 @@ class SP_Process_Steps_Manager {
         global $wpdb;
         $table = $wpdb->prefix . 'solar_process_steps';
         $steps = $wpdb->get_results($wpdb->prepare(
-            "SELECT * FROM {$table} WHERE project_id = %d AND admin_status = 'pending' AND image_url IS NOT NULL ORDER BY step_number ASC",
+            "SELECT * FROM {$table} WHERE project_id = %d AND admin_status = 'under_review' ORDER BY step_number ASC",
             $post->ID
         ));
 
