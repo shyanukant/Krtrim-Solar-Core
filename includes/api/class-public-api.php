@@ -26,7 +26,8 @@ class KSC_Public_API {
         add_action('wp_ajax_nopriv_complete_vendor_registration', [$this, 'complete_vendor_registration']);
         
         // Razorpay order creation
-        add_action('wp_ajax_nopriv_create_razorpay_order', [$this, 'create_razorpay_order']);
+        add_action('wp_ajax_create_razorpay_order', [$this, 'create_razorpay_order']);  // ✅ Add this
+        add_action('wp_ajax_nopriv_create_razorpay_order', [$this, 'create_razorpay_order']);  // ✅ Keep this
         error_log('KSC_Public_API: Razorpay action registered');
         
         // Email verification
