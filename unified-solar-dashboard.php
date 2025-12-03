@@ -104,9 +104,12 @@ final class Krtrim_Solar_Core {
         add_action( 'admin_init', [ $this, 'restrict_wp_admin_access' ] );
         add_filter( 'logout_redirect', [ $this, 'custom_logout_redirect' ] );
         
-        // Default featured image for solar projects (works everywhere including Elementor)
-        add_filter( 'post_thumbnail_html', [ $this, 'default_project_thumbnail_html' ], 10, 5 );
-        add_filter( 'post_thumbnail_url', [ $this, 'default_project_thumbnail_url' ], 10, 3 );
+        // Default featured image for solar projects (works everywhere including		// Enqueue default project image filters
+		add_filter('post_thumbnail_html', [$this, 'filter_default_project_image'], 10, 5);
+		add_filter('post_thumbnail_url', [$this, 'filter_default_project_image_url'], 10, 2);
+		
+		// Cascade delete: Clean up related data when project is deleted
+		add_action('before_delete_post', [$this, 'cleanup_project_data'], 10, 2);
 	}
 
     /**
@@ -181,6 +184,43 @@ final class Krtrim_Solar_Core {
     public function custom_logout_redirect() {
         return wp_login_url();
     }
+
+    /**
+     * Cascade delete: Clean up related data when a solar project is deleted
+     * Removes orphaned records from custom tables
+     */
+    public function cleanup_project_data($post_id, $post) {
+        // Only proceed if this is a solar_project post type
+        if (!$post || $post->post_type !== 'solar_project') {
+            return;
+        }
+
+        global $wpdb;
+
+        // Delete all bids for this project
+        $bids_table = $wpdb->prefix . 'project_bids';
+        $deleted_bids = $wpdb->delete($bids_table, ['project_id' => $post_id], ['%d']);
+        
+        // Delete all process steps for this project
+        $steps_table = $wpdb->prefix . 'solar_process_steps';
+        $deleted_steps = $wpdb->delete($steps_table, ['project_id' => $post_id], ['%d']);
+        
+        // Delete all notifications for this project
+        $notifications_table = $wpdb->prefix . 'solar_notifications';
+        $deleted_notifications = $wpdb->delete($notifications_table, ['project_id' => $post_id], ['%d']);
+
+        // Log cleanup for debugging (optional)
+        if (defined('WP_DEBUG') && WP_DEBUG) {
+            error_log(sprintf(
+                'Solar Project #%d deleted. Cleaned up: %d bids, %d steps, %d notifications',
+                $post_id,
+                $deleted_bids === false ? 0 : $deleted_bids,
+                $deleted_steps === false ? 0 : $deleted_steps,
+                $deleted_notifications === false ? 0 : $deleted_notifications
+            ));
+        }
+    }
+
 
     /**
      * Provide default featured image HTML for solar projects when no featured image is set

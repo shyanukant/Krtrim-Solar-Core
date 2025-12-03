@@ -155,7 +155,7 @@ class KSC_Admin_Manager_API extends KSC_API_Base {
             $method = sanitize_text_field($data['vendor_assignment_method']);
             update_post_meta($project_id, '_vendor_assignment_method', $method);
             
-            if ($method === 'manual' && isset($data['assigned_vendor_id'])) {
+            if ($method === 'manual' && isset($data['assigned_vendor_id']) && !empty($data['assigned_vendor_id'])) {
                 update_post_meta($project_id, '_assigned_vendor_id', sanitize_text_field($data['assigned_vendor_id']));
                 update_post_meta($project_id, 'project_status', 'assigned');
                 

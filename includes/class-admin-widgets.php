@@ -359,16 +359,23 @@ class SP_Admin_Widgets {
     private function get_financial_stats() {
         global $wpdb;
         
+        // Only count published (active) projects, exclude trashed/deleted
         $revenue = $wpdb->get_var("
-            SELECT SUM(meta_value) 
-            FROM {$wpdb->postmeta} 
-            WHERE meta_key = '_total_project_cost'
+            SELECT SUM(pm.meta_value) 
+            FROM {$wpdb->postmeta} pm
+            INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+            WHERE pm.meta_key = '_total_project_cost'
+            AND p.post_type = 'solar_project'
+            AND p.post_status = 'publish'
         ");
         
         $costs = $wpdb->get_var("
-            SELECT SUM(meta_value) 
-            FROM {$wpdb->postmeta} 
-            WHERE meta_key = '_vendor_paid_amount'
+            SELECT SUM(pm.meta_value) 
+            FROM {$wpdb->postmeta} pm
+            INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
+            WHERE pm.meta_key = '_vendor_paid_amount'
+            AND p.post_type = 'solar_project'
+            AND p.post_status = 'publish'
         ");
         
         $profit = $revenue - $costs;

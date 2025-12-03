@@ -402,15 +402,46 @@ function sp_area_manager_dashboard_shortcode() {
                             </div>
                             <div class="form-group vendor-manual-fields">
                                 <label for="assigned_vendor_id">Assign Vendor</label>
-                                <?php
-                                wp_dropdown_users( array(
-                                    'role' => 'solar_vendor',
-                                    'name' => 'assigned_vendor_id',
-                                    'show_option_none' => 'Select Vendor',
-                                    'meta_key' => '_created_by_area_manager',
-                                    'meta_value' => get_current_user_id(),
-                                ) );
-                                ?>
+                                <select name="assigned_vendor_id" id="assigned_vendor_id">
+                                    <option value="">Select Vendor</option>
+                                    <?php
+                                    // Get area manager's assigned city
+                                    $manager_city = get_user_meta(get_current_user_id(), 'city', true);
+                                    
+                                    // Get all vendors
+                                    $all_vendors = get_users(array('role' => 'solar_vendor'));
+                                    
+                                    // Filter vendors who have coverage for this specific city
+                                    foreach ($all_vendors as $vendor) {
+                                        $purchased_cities = get_user_meta($vendor->ID, 'purchased_cities', true) ?: array();
+                                        
+                                        // Check if vendor has purchased this specific city
+                                        $has_city_coverage = false;
+                                        if (is_array($purchased_cities)) {
+                                            foreach ($purchased_cities as $city_obj) {
+                                                // Handle both array and string formats
+                                                $city_name = '';
+                                                if (is_array($city_obj) && isset($city_obj['city'])) {
+                                                    $city_name = $city_obj['city'];
+                                                } elseif (is_string($city_obj)) {
+                                                    $city_name = $city_obj;
+                                                }
+                                                
+                                                if ($city_name === $manager_city) {
+                                                    $has_city_coverage = true;
+                                                    break;
+                                                }
+                                            }
+                                        }
+                                        
+                                        // Only show vendor if they have coverage for this city
+                                        if ($has_city_coverage) {
+                                            echo '<option value="' . esc_attr($vendor->ID) . '">' . esc_html($vendor->display_name) . '</option>';
+                                        }
+                                    }
+                                    ?>
+                                </select>
+                                <small style="color: #666;">Only vendors with coverage for <?php echo esc_html($manager_city); ?> are shown</small>
                             </div>
                             <div class="form-group vendor-manual-fields">
                                 <label for="paid_to_vendor">Amount to be Paid to Vendor</label>
