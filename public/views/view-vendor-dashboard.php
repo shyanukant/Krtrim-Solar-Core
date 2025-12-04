@@ -742,13 +742,10 @@ function render_solar_vendor_dashboard() {
                         </div>
                         
                         <!-- Logout Button -->
-                        <div class="card" style="margin-top: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border: none;">
-                            <div style="padding: 30px; text-align: center;">
-                                <a href="<?php echo wp_logout_url(home_url()); ?>" class="logout-button" style="display: inline-flex; align-items: center; gap: 10px; padding: 15px 40px; background: #fff; color: #667eea; text-decoration: none; border-radius: 50px; font-weight: 600; font-size: 16px; box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: all 0.3s ease;">
-                                    <span style="font-size: 24px;">🚪</span>
-                                    <span>Logout from Account</span>
-                                </a>
-                            </div>
+                        <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05); text-align: center;">
+                            <a href="<?php echo wp_logout_url(home_url()); ?>" class="logout-btn-simple" style="display: inline-block; padding: 10px 30px; background: #dc3545; color: #fff; text-decoration: none; border-radius: 6px; font-weight: 500; font-size: 14px; transition: background 0.3s;">
+                                🚪 Logout
+                            </a>
                         </div>
 
                     </div>

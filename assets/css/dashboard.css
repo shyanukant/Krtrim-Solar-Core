@@ -2402,3 +2402,80 @@ body {
 }
     
     /* Mobile Logout Button (below bottom nav) */
+
+/* ===================================
+   VENDOR PROFILE MOBILE RESPONSIVENESS
+   =================================== */
+
+/* Logout button hover effect */
+.logout-btn-simple:hover {
+    background: #c82333 !important;
+    transform: scale(1.02);
+}
+
+/* Mobile responsiveness for vendor profile */
+@media (max-width: 767px) {
+    /* Make coverage expansion grid stack vertically on mobile */
+    .coverage-expansion-grid {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+    }
+    
+    /* Reduce card padding on mobile */
+    #profile-section .card {
+        padding: 15px !important;
+    }
+    
+    /* Make city checkboxes grid more compact on mobile */
+    #city-checkboxes {
+        grid-template-columns: repeat(auto-fill, minmax(100px, 1fr)) !important;
+        font-size: 13px;
+    }
+    
+    /* Summary panel adjustments */
+    .summary-panel {
+        padding: 15px !important;
+    }
+    
+    /* Form inputs full width on mobile */
+    #profile-section input[type="text"],
+    #profile-section select {
+        width: 100% !important;
+        font-size: 16px; /* Prevent zoom on iOS */
+    }
+    
+    /* Smaller headings on mobile */
+    #profile-section h3 {
+        font-size: 18px;
+    }
+    
+    #profile-section h4 {
+        font-size: 16px;
+    }
+    
+    /* Logout button full width on mobile */
+    .logout-btn-simple {
+        display: block !important;
+        width: 100%;
+        text-align: center;
+    }
+}
+
+/* Extra small devices (320px - 480px) */
+@media (max-width: 480px) {
+    /* Even more compact city checkboxes */
+    #city-checkboxes {
+        grid-template-columns: 1fr 1fr !important;
+        gap: 8px !important;
+    }
+    
+    /* Reduce coverage card padding */
+    .coverage-expansion-grid {
+        gap: 15px !important;
+    }
+    
+    /* Stack form groups */
+    .form-group {
+        margin-bottom: 15px !important;
+    }
+}
