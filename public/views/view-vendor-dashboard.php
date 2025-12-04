@@ -720,6 +720,26 @@ function render_solar_vendor_dashboard() {
                 </div>
             </div>
         </main>
+        
+        <!-- Mobile Bottom Navigation (visible only on mobile < 768px) -->
+        <nav class="mobile-bottom-nav">
+            <a href="#" class="nav-btn active" data-section="dashboard" onclick="switchVendorSection(event, 'dashboard')">
+                <span class="nav-icon">📊</span>
+                <span class="nav-label">Home</span>
+            </a>
+            <a href="#" class="nav-btn" data-section="projects" onclick="switchVendorSection(event, 'projects')">
+                <span class="nav-icon">📂</span>
+                <span class="nav-label">Projects</span>
+            </a>
+            <a href="#" class="nav-btn" data-section="timeline" onclick="switchVendorSection(event, 'timeline')">
+                <span class="nav-icon">🔄</span>
+                <span class="nav-label">Work</span>
+            </a>
+            <a href="#" class="nav-btn" data-section="profile" onclick="switchVendorSection(event, 'profile')">
+                <span class="nav-icon">👤</span>
+                <span class="nav-label">Profile</span>
+            </a>
+        </nav>
     </div>
     
     <!-- Razorpay Script -->

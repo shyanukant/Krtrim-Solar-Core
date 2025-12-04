@@ -2319,3 +2319,84 @@ body {
         height: 180px;
     }
 }
+/* ========================================
+   MOBILE BOTTOM NAVIGATION
+   ======================================== */
+
+@media (max-width: 767px) {
+    /* Mobile Bottom Navigation Bar */
+    .mobile-bottom-nav {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        right: 0;
+        height: 60px;
+        background: #fff;
+        box-shadow: 0 -2px 10px rgba(0,0,0,0.1);
+        display: flex;
+        justify-content: space-around;
+        align-items: center;
+        z-index: 1000;
+        padding: 0 10px;
+        border-top: 1px solid #e0e0e0;
+    }
+    
+    .mobile-bottom-nav .nav-btn {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        padding: 8px 4px;
+        text-decoration: none;
+        color: #666;
+        transition: all 0.3s ease;
+        border-radius: 8px;
+        min-width: 60px;
+    }
+    
+    .mobile-bottom-nav .nav-btn:active {
+        background: #f5f5f5;
+        transform: scale(0.95);
+    }
+    
+    .mobile-bottom-nav .nav-btn.active {
+        color: #007bff;
+        font-weight: 600;
+    }
+    
+    .mobile-bottom-nav .nav-icon {
+        font-size: 24px;
+        line-height: 1;
+    }
+    
+    .mobile-bottom-nav .nav-label {
+        font-size: 11px;
+        line-height: 1;
+        white-space: nowrap;
+    }
+    
+    /* Add bottom padding to main content to prevent overlap */
+    .dashboard-main {
+        padding-bottom: 80px !important;
+    }
+    
+    /* Hide desktop elements on mobile */
+    .dashboard-sidebar,
+    .sidebar-toggle-mobile,
+    .mobile-sidebar-toggle-floating {
+        display: none !important;
+    }
+    
+    /* Ensure dashboard takes full width on mobile */
+    .modern-solar-dashboard,
+    .modern-vendor-dashboard {
+        flex-direction: column;
+    }
+    
+    .dashboard-main {
+        width: 100%;
+        max-width: 100%;
+    }
+}

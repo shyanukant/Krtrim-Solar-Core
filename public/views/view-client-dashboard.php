@@ -118,6 +118,15 @@ function switchSection(event, sectionName) {
         activeNav.classList.add('active');
     }
     
+    // Update mobile bottom nav active state
+    document.querySelectorAll('.mobile-bottom-nav .nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBottomBtn = document.querySelector('.mobile-bottom-nav .nav-btn[data-section="' + sectionName + '"]');
+    if (activeBottomBtn) {
+        activeBottomBtn.classList.add('active');
+    }
+    
     const titles = {
         'dashboard': 'Dashboard',
         'projects': 'Projects',
@@ -814,22 +823,18 @@ function toggleProjectDetails(projectId) {
     </main>
     
     <!-- Mobile Bottom Navigation (visible only on mobile < 768px) -->
-    <nav class="mobile-bottom-nav" style="display: none; position: fixed; bottom: 0; left: 0; right: 0; z-index: 1000;">
-        <a href="#" class="mobile-nav-item active" data-section="dashboard" onclick="switchSection(event, 'dashboard')">
-            <span class="mobile-nav-icon">📊</span>
-            <span class="mobile-nav-label">Dashboard</span>
+    <nav class="mobile-bottom-nav">
+        <a href="#" class="nav-btn active" data-section="dashboard" onclick="switchSection(event, 'dashboard')">
+            <span class="nav-icon">📊</span>
+            <span class="nav-label">Dashboard</span>
         </a>
-        <a href="#" class="mobile-nav-item" data-section="projects" onclick="switchSection(event, 'projects')">
-            <span class="mobile-nav-icon">⚡️</span>
-            <span class="mobile-nav-label">Projects</span>
+        <a href="#" class="nav-btn" data-section="projects" onclick="switchSection(event, 'projects')">
+            <span class="nav-icon">📂</span>
+            <span class="nav-label">Projects</span>
         </a>
-        <a href="#" class="mobile-nav-item" data-section="timeline" onclick="switchSection(event, 'timeline')">
-            <span class="mobile-nav-icon">🔄</span>
-            <span class="mobile-nav-label">Timeline</span>
-        </a>
-        <a href="#" class="mobile-nav-item" onclick="toggleMobileProfile(event)">
-            <span class="mobile-nav-icon">👤</span>
-            <span class="mobile-nav-label">Profile</span>
+        <a href="#" class="nav-btn" data-section="timeline" onclick="switchSection(event, 'timeline')">
+            <span class="nav-icon">🔄</span>
+            <span class="nav-label">Timeline</span>
         </a>
     </nav>
     

@@ -104,9 +104,10 @@ final class Krtrim_Solar_Core {
         add_action( 'admin_init', [ $this, 'restrict_wp_admin_access' ] );
         add_filter( 'logout_redirect', [ $this, 'custom_logout_redirect' ] );
         
-        // Default featured image for solar projects (works everywhere including		// Enqueue default project image filters
-		add_filter('post_thumbnail_html', [$this, 'filter_default_project_image'], 10, 5);
-		add_filter('post_thumbnail_url', [$this, 'filter_default_project_image_url'], 10, 2);
+        // Note: Default featured image filters removed - methods were not implemented
+        // add_filter('post_thumbnail_html', [$this, 'filter_default_project_image'], 10, 5);
+        // add_filter('post_thumbnail_url', [$this, 'filter_default_project_image_url'], 10, 2);
+        
 		
 		// Cascade delete: Clean up related data when project is deleted
 		add_action('before_delete_post', [$this, 'cleanup_project_data'], 10, 2);

@@ -373,7 +373,7 @@ class SP_Admin_Widgets {
             SELECT SUM(pm.meta_value) 
             FROM {$wpdb->postmeta} pm
             INNER JOIN {$wpdb->posts} p ON pm.post_id = p.ID
-            WHERE pm.meta_key = '_vendor_paid_amount'
+            WHERE pm.meta_key = '_paid_to_vendor'
             AND p.post_type = 'solar_project'
             AND p.post_status = 'publish'
         ");

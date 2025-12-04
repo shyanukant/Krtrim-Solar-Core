@@ -35,7 +35,7 @@ function sp_render_leaderboard_view() {
         $company_profit = 0;
 
         foreach ($projects as $project) {
-            $paid = get_post_meta($project->ID, '_vendor_paid_amount', true) ?: 0;
+            $paid = get_post_meta($project->ID, '_paid_to_vendor', true) ?: 0;
             $total_cost = get_post_meta($project->ID, '_total_project_cost', true) ?: 0;
             $profit = $total_cost - $paid;
             $paid_to_vendors += $paid;

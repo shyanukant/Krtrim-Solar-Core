@@ -39,6 +39,15 @@ function switchVendorSection(event, section) {
     document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
     document.querySelector('[data-section="' + section + '"]').classList.add('active');
 
+    // Update mobile bottom nav active state
+    document.querySelectorAll('.mobile-bottom-nav .nav-btn').forEach(btn => {
+        btn.classList.remove('active');
+    });
+    const activeBottomBtn = document.querySelector('.mobile-bottom-nav .nav-btn[data-section="' + section + '"]');
+    if (activeBottomBtn) {
+        activeBottomBtn.classList.add('active');
+    }
+
     const titles = {
         'dashboard': 'Dashboard',
         'projects': 'Projects',
