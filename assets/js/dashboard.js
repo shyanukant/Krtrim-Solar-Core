@@ -570,9 +570,8 @@ jQuery(document).ready(function ($) {
     // 3. Payment & Add Coverage
     $('#pay-add-coverage-btn').on('click', function () {
         const selectedState = $('#coverage-state-select').val();
-        const buyState = $('#buy-state-checkbox').is(':checked') && $('#buy-state-option').is(':visible');
-
-        const states = buyState ? [selectedState] : [];
+        const isOwned = vendorCoverage.ownedStates.includes(selectedState);
+        const states = (selectedState && !isOwned) ? [selectedState] : [];
         const cities = [];
         $('.city-checkbox:checked').each(function () {
             cities.push($(this).val());

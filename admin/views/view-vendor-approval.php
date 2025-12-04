@@ -125,50 +125,61 @@ function sp_render_vendor_approval_page() {
         <?php wp_nonce_field('sp_vendor_approval_nonce', 'sp_vendor_approval_nonce_field'); ?>
 
         <!-- Edit Vendor Modal -->
-        <div id="edit-vendor-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999;">
-            <div style="background:#fff; width:500px; margin:50px auto; padding:20px; border-radius:5px; box-shadow:0 0 10px rgba(0,0,0,0.3);">
-                <h2>Edit Vendor Details</h2>
-                <form id="edit-vendor-form">
-                    <input type="hidden" id="edit-vendor-id" name="user_id">
-                    
-                    <p>
-                        <label for="edit-company-name">Company Name:</label><br>
-                        <input type="text" id="edit-company-name" name="company_name" class="widefat" required>
-                    </p>
-                    
-                    <p>
-                        <label for="edit-phone">Phone:</label><br>
-                        <input type="text" id="edit-phone" name="phone" class="widefat" required>
-                    </p>
-                    
-                    <p>
-                        <label>Coverage States:</label><br>
-                        <select id="edit-states" name="states[]" multiple class="widefat" style="height:100px;">
-                            <?php
-                            $json_file = plugin_dir_path(dirname(dirname(__FILE__))) . 'assets/data/indian-states-cities.json';
-                            if (file_exists($json_file)) {
-                                $json_data = file_get_contents($json_file);
-                                $data = json_decode($json_data, true);
-                                if ($data && isset($data['states'])) {
-                                    foreach ($data['states'] as $state) {
-                                        echo '<option value="' . esc_attr($state['state']) . '">' . esc_html($state['state']) . '</option>';
+        <div id="edit-vendor-modal" style="display:none; position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.5); z-index:9999; overflow-y: auto;">
+            <div style="background:#fff; width:600px; max-width:90%; margin:30px auto; border-radius:5px; box-shadow:0 0 10px rgba(0,0,0,0.3); max-height: calc(100vh - 60px); display: flex; flex-direction: column;">
+                <h2 style="padding: 20px 20px 10px 20px; margin: 0; border-bottom: 1px solid #ddd;">Edit Vendor Details</h2>
+                <form id="edit-vendor-form" style="display: flex; flex-direction: column; flex: 1; min-height: 0;">
+                    <div style="padding: 20px; overflow-y: auto; flex: 1;">
+                        <input type="hidden" id="edit-vendor-id" name="user_id">
+                        
+                        <p>
+                            <label for="edit-company-name">Company Name:</label><br>
+                            <input type="text" id="edit-company-name" name="company_name" class="widefat" required>
+                        </p>
+                        
+                        <p>
+                            <label for="edit-phone">Phone:</label><br>
+                            <input type="text" id="edit-phone" name="phone" class="widefat" required>
+                        </p>
+                        
+                        <p>
+                            <label><strong>Coverage States:</strong></label><br>
+                            <div id="edit-states-checkboxes" style="max-height: 200px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #f9f9f9;">
+                                <?php
+                                $json_file = plugin_dir_path(dirname(dirname(__FILE__))) . 'assets/data/indian-states-cities.json';
+                                if (file_exists($json_file)) {
+                                    $json_data = file_get_contents($json_file);
+                                    $data = json_decode($json_data, true);
+                                    if ($data && isset($data['states'])) {
+                                        foreach ($data['states'] as $state) {
+                                            echo '<label style="display: block; padding: 4px 0; cursor: pointer;">';
+                                            echo '<input type="checkbox" class="state-checkbox" value="' . esc_attr($state['state']) . '" style="margin-right: 8px;">';
+                                            echo '<span>' . esc_html($state['state']) . '</span>';
+                                            echo '</label>';
+                                        }
                                     }
                                 }
-                            }
-                            ?>
-                        </select>
-                        <small>Hold Ctrl/Cmd to select multiple</small>
-                    </p>
+                                ?>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <button type="button" class="button button-small" onclick="selectAllStates()">Select All</button>
+                                <button type="button" class="button button-small" onclick="deselectAllStates()">Deselect All</button>
+                            </div>
+                        </p>
+                        
+                        <p>
+                            <label><strong>Coverage Cities:</strong></label><br>
+                            <div id="edit-cities-checkboxes" style="max-height: 250px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px; background: #f9f9f9;">
+                                <p style="text-align: center; color: #999; margin: 20px 0;">Select states above to see available cities</p>
+                            </div>
+                            <div style="margin-top: 8px;">
+                                <button type="button" class="button button-small" onclick="selectAllCities()">Select All</button>
+                                <button type="button" class="button button-small" onclick="deselectAllCities()">Deselect All</button>
+                            </div>
+                        </p>
+                    </div>
                     
-                    <p>
-                        <label>Coverage Cities:</label><br>
-                        <select id="edit-cities" name="cities[]" multiple class="widefat" style="height:100px;">
-                            <!-- Populated via JS based on states -->
-                        </select>
-                        <small>Hold Ctrl/Cmd to select multiple</small>
-                    </p>
-                    
-                    <div style="margin-top:20px; text-align:right;">
+                    <div style="padding: 15px 20px; border-top: 1px solid #ddd; background: #f9f9f9; text-align: right; flex-shrink: 0;">
                         <button type="button" class="button" onclick="document.getElementById('edit-vendor-modal').style.display='none'">Cancel</button>
                         <button type="submit" class="button button-primary">Save Changes</button>
                     </div>

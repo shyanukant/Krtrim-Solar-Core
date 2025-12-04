@@ -225,8 +225,22 @@ class KSC_Vendor_API extends KSC_API_Base {
         $current_states = get_user_meta($vendor_id, 'purchased_states', true) ?: [];
         $current_cities = get_user_meta($vendor_id, 'purchased_cities', true) ?: [];
         
-        $new_states = array_unique(array_merge($current_states, $states));
-        $new_cities = array_unique(array_merge($current_cities, $cities));
+        // Normalize states to string array (handle both object and string formats)
+        $current_states_normalized = array_map(function($state) {
+            return is_array($state) && isset($state['state']) ? $state['state'] : $state;
+        }, $current_states);
+        
+        // Normalize cities to string array (handle both object and string formats)
+        $current_cities_normalized = array_map(function($city) {
+            if (is_array($city) && isset($city['city'])) {
+                return $city['city'];  // Extract city name from object
+            }
+            return $city;  // Already a string
+        }, $current_cities);
+        
+        // Merge and deduplicate (array_unique works properly with strings)
+        $new_states = array_values(array_unique(array_merge($current_states_normalized, $states)));
+        $new_cities = array_values(array_unique(array_merge($current_cities_normalized, $cities)));
         
         update_user_meta($vendor_id, 'purchased_states', $new_states);
         update_user_meta($vendor_id, 'purchased_cities', $new_cities);

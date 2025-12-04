@@ -635,19 +635,45 @@ function render_solar_vendor_dashboard() {
                         <!-- Current Coverage -->
                         <div class="card" style="background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.05);">
                             <h3>My Coverage Area</h3>
-                            <div style="margin-bottom: 15px;">
+                            <div>
                                 <strong>States (<?php echo count($purchased_states); ?>):</strong>
                                 <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
-                                    <?php foreach($purchased_states as $state): ?>
-                                        <span style="background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($state); ?></span>
+                                    <?php foreach($purchased_states as $state_obj): ?>
+                                        <?php
+                                        // Handle both array/object and string formats
+                                        $state_name = '';
+                                        if (is_array($state_obj) && isset($state_obj['state'])) {
+                                            $state_name = $state_obj['state'];  // Object format from registration
+                                        } elseif (is_string($state_obj)) {
+                                            $state_name = $state_obj;  // String format from admin/dashboard
+                                        }
+                                        ?>
+                                        <?php if ($state_name): ?>
+                                            <span style="background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                                <?php echo esc_html($state_name); ?>
+                                            </span>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
                             <div>
                                 <strong>Cities (<?php echo count($purchased_cities); ?>):</strong>
                                 <div style="display: flex; flex-wrap: wrap; gap: 5px; margin-top: 5px;">
-                                    <?php foreach($purchased_cities as $city): ?>
-                                        <span style="background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-size: 12px;"><?php echo esc_html($city); ?></span>
+                                    <?php foreach($purchased_cities as $city_obj): ?>
+                                        <?php
+                                        // Handle both array/object and string formats
+                                        $city_name = '';
+                                        if (is_array($city_obj) && isset($city_obj['city'])) {
+                                            $city_name = $city_obj['city'];  // Object format from registration
+                                        } elseif (is_string($city_obj)) {
+                                            $city_name = $city_obj;  // String format from admin/dashboard
+                                        }
+                                        ?>
+                                        <?php if ($city_name): ?>
+                                            <span style="background: #eef2f7; padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+                                                <?php echo esc_html($city_name); ?>
+                                            </span>
+                                        <?php endif; ?>
                                     <?php endforeach; ?>
                                 </div>
                             </div>
