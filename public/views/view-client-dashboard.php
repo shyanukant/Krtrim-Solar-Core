@@ -43,8 +43,7 @@ function render_solar_client_dashboard() {
     $agg_total_cost = 0;
     $agg_paid = 0;
     $agg_balance = 0;
-    $agg_total_steps = 0;
-    $agg_completed_steps = 0;
+    // Removed step counting - steps are project-specific
     $first_project_id = 0;
     
     if ($project_query->have_posts()) {
@@ -63,24 +62,14 @@ function render_solar_client_dashboard() {
             $agg_total_cost += floatval(get_post_meta($temp_project_id, '_total_project_cost', true));
             $agg_paid += floatval(get_post_meta($temp_project_id, '_paid_amount', true));
             
-            // Get steps for this project
-            $steps = $wpdb->get_results($wpdb->prepare(
-                "SELECT * FROM {$steps_table} WHERE project_id = %d",
-                $temp_project_id
-            ));
-            
-            $agg_total_steps += count($steps);
-            foreach ($steps as $step) {
-                if ($step->admin_status == 'approved') {
-                    $agg_completed_steps++;
-                }
-            }
+            // Steps are tracked per-project, not aggregated
         }
         wp_reset_postdata();
     }
     
     $agg_balance = $agg_total_cost - $agg_paid;
-    $agg_progress = ($agg_total_steps > 0) ? round(($agg_completed_steps / $agg_total_steps) * 100) : 0;
+    // Calculate average progress from payment completion
+    $agg_progress = ($agg_total_cost > 0) ? round(($agg_paid / $agg_total_cost) * 100) : 0;
     
     // For chart data (use aggregated)
     $chart_total_cost = $agg_total_cost;
@@ -378,7 +367,7 @@ function toggleProjectDetails(projectId) {
                             <span class="stat-icon">📊</span>
                         </div>
                         <div class="stat-value"><?php echo $agg_progress; ?>%</div>
-                        <div class="stat-subtitle"><?php echo $agg_completed_steps; ?>/<?php echo $agg_total_steps; ?> total steps</div>
+                        <div class="stat-subtitle">Based on payments received</div>
                     </div>
                 </div>
                 
@@ -418,16 +407,12 @@ function toggleProjectDetails(projectId) {
                                         
                                         <div class="progress-details">
                                             <div class="detail-item">
-                                                <span class="detail-label">Completed</span>
-                                                <span class="detail-value"><?php echo $agg_completed_steps; ?> steps</span>
+                                                <span class="detail-label">Projects</span>
+                                                <span class="detail-value"><?php echo $total_projects; ?></span>
                                             </div>
                                             <div class="detail-item">
-                                                <span class="detail-label">Remaining</span>
-                                                <span class="detail-value"><?php echo ($agg_total_steps - $agg_completed_steps); ?> steps</span>
-                                            </div>
-                                            <div class="detail-item">
-                                                <span class="detail-label">Total Steps</span>
-                                                <span class="detail-value"><?php echo $agg_total_steps; ?></span>
+                                                <span class="detail-label">Total Value</span>
+                                                <span class="detail-value">₹<?php echo number_format($agg_total_cost, 0); ?></span>
                                             </div>
                                         </div>
                                     </div>
@@ -835,6 +820,10 @@ function toggleProjectDetails(projectId) {
         <a href="#" class="nav-btn" data-section="timeline" onclick="switchSection(event, 'timeline')">
             <span class="nav-icon">🔄</span>
             <span class="nav-label">Timeline</span>
+        </a>
+        <a href="<?php echo wp_logout_url(home_url()); ?>" class="nav-btn">
+            <span class="nav-icon">🚪</span>
+            <span class="nav-label">Logout</span>
         </a>
     </nav>
     
