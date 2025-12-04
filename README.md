@@ -10,7 +10,7 @@
 **A comprehensive project management and bidding platform for solar companies**
 
 [Website](https://www.krtrim.tech) • [Documentation](https://github.com/krtrimtech/Krtrim-Solar-Core/wiki) • [Report Bug](https://github.com/krtrimtech/Krtrim-Solar-Core/issues) • [Request Feature](https://github.com/krtrimtech/Krtrim-Solar-Core/issues)
-
+[![Sponsor](https://img.shields.io/badge/💖%20Sponsor-Support%20My%20Work-ff69b4?style=for-the-badge&logo=github&logoColor=white)](https://github.com/sponsors/shyanukant)
 </div>
 
 ---
